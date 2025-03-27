@@ -38,7 +38,7 @@
         <section class="category-news mb-4">
             <h2 class="section-title">GÜNDEM</h2>
             <div class="row">
-                {{ range .Categories.Gundem }}
+                {{ range .CategoryArticles.Gundem }}
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
                         <img src="{{ .FeaturedImage }}" class="card-img-top" alt="{{ .Title }}">
@@ -61,7 +61,7 @@
         <section class="category-news mb-4">
             <h2 class="section-title">EKONOMİ</h2>
             <div class="row">
-                {{ range .Categories.Ekonomi }}
+                {{ range .CategoryArticles.Ekonomi }}
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
                         <img src="{{ .FeaturedImage }}" class="card-img-top" alt="{{ .Title }}">
@@ -84,7 +84,7 @@
         <section class="category-news mb-4">
             <h2 class="section-title">SPOR</h2>
             <div class="row">
-                {{ range .Categories.Spor }}
+                {{ range .CategoryArticles.Spor }}
                 <div class="col-md-4 mb-3">
                     <div class="card h-100">
                         <img src="{{ .FeaturedImage }}" class="card-img-top" alt="{{ .Title }}">
