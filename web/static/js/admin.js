@@ -1,138 +1,408 @@
-// Admin panel JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // Sidebar mobil görünüm kontrolü
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const adminSidebar = document.querySelector('.admin-sidebar');
-    
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function() {
-            adminSidebar.classList.toggle('show');
+/**
+ * Admin Panel JavaScript
+ */
+
+// DOM yüklendikten sonra çalışacak kodlar
+document.addEventListener("DOMContentLoaded", function() {
+    // Sidebar toggle butonu
+    const sidebarToggleBtn = document.querySelector('.sidebar-toggle-btn');
+    if (sidebarToggleBtn) {
+        sidebarToggleBtn.addEventListener('click', function() {
+            document.querySelector('.admin-layout').classList.toggle('sidebar-collapsed');
         });
     }
-    
-    // Form doğrulama
-    const forms = document.querySelectorAll('.needs-validation');
-    Array.from(forms).forEach(form => {
-        form.addEventListener('submit', event => {
-            if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            form.classList.add('was-validated');
-        }, false);
-    });
-    
-    // Silme işlemi onay modalı
-    const confirmDeleteModal = document.getElementById('confirmDeleteModal');
-    if (confirmDeleteModal) {
-        confirmDeleteModal.addEventListener('show.bs.modal', function(event) {
-            const button = event.relatedTarget;
-            const id = button.getAttribute('data-id');
-            const name = button.getAttribute('data-name');
-            const type = button.getAttribute('data-type');
-            
-            const modalTitle = confirmDeleteModal.querySelector('.modal-title');
-            const modalBody = confirmDeleteModal.querySelector('.modal-body p');
-            const confirmButton = confirmDeleteModal.querySelector('#confirmDeleteButton');
-            
-            modalTitle.textContent = `${type} Sil`;
-            modalBody.textContent = `"${name}" ${type.toLowerCase()}ını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`;
-            confirmButton.setAttribute('data-id', id);
-        });
-        
-        const confirmDeleteButton = document.getElementById('confirmDeleteButton');
-        if (confirmDeleteButton) {
-            confirmDeleteButton.addEventListener('click', function() {
-                const id = this.getAttribute('data-id');
-                const form = document.getElementById('deleteForm');
-                const idInput = document.getElementById('deleteItemId');
-                
-                idInput.value = id;
-                form.submit();
+
+    // Mobilde sidebar kapatma
+    const mediaQuery = window.matchMedia('(max-width: 992px)');
+    if (mediaQuery.matches) {
+        document.querySelectorAll('.admin-sidebar .nav-link').forEach(function(link) {
+            link.addEventListener('click', function() {
+                if (window.innerWidth <= 576) {
+                    document.querySelector('.admin-layout').classList.add('sidebar-collapsed');
+                }
             });
+        });
+    }
+
+    // Tablo satır seçimi
+    const selectableRows = document.querySelectorAll('.selectable-row');
+    if (selectableRows.length > 0) {
+        selectableRows.forEach(function(row) {
+            row.addEventListener('click', function(e) {
+                // Butonlara tıklandığında propagation engellenmiş olmalı
+                if (!e.target.closest('button') && !e.target.closest('a') && !e.target.closest('input')) {
+                    this.classList.toggle('selected');
+                    const checkbox = this.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        updateBulkActions();
+                    }
+                }
+            });
+        });
+    }
+
+    // Tüm checkbox'ları seçme
+    const selectAllCheckbox = document.querySelector('#selectAll');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(function(checkbox) {
+                checkbox.checked = selectAllCheckbox.checked;
+                const row = checkbox.closest('tr');
+                if (row) {
+                    if (checkbox.checked) {
+                        row.classList.add('selected');
+                    } else {
+                        row.classList.remove('selected');
+                    }
+                }
+            });
+            updateBulkActions();
+        });
+    }
+
+    // Checkbox'lar değiştiğinde satır stilini güncelleme
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    if (itemCheckboxes.length > 0) {
+        itemCheckboxes.forEach(function(checkbox) {
+            checkbox.addEventListener('change', function(e) {
+                e.stopPropagation();
+                const row = this.closest('tr');
+                if (row) {
+                    if (this.checked) {
+                        row.classList.add('selected');
+                    } else {
+                        row.classList.remove('selected');
+                    }
+                }
+                updateBulkActions();
+            });
+        });
+    }
+
+    // Toplu işlemler butonunu güncelleme
+    function updateBulkActions() {
+        const bulkActionBtn = document.querySelector('.bulk-actions-btn');
+        const selectedCount = document.querySelectorAll('.item-checkbox:checked').length;
+        
+        if (bulkActionBtn) {
+            if (selectedCount > 0) {
+                bulkActionBtn.classList.remove('disabled');
+                bulkActionBtn.querySelector('.count').textContent = selectedCount;
+            } else {
+                bulkActionBtn.classList.add('disabled');
+                bulkActionBtn.querySelector('.count').textContent = '0';
+            }
         }
     }
-    
-    // Medya seçici
-    const mediaSelectButtons = document.querySelectorAll('.media-select-button');
-    if (mediaSelectButtons.length > 0) {
-        mediaSelectButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const targetInput = this.getAttribute('data-target');
-                const targetPreview = this.getAttribute('data-preview');
+
+    // Form doğrulama
+    const forms = document.querySelectorAll('.needs-validation');
+    if (forms.length > 0) {
+        forms.forEach(function(form) {
+            form.addEventListener('submit', function(event) {
+                if (!form.checkValidity()) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }
+
+    // Bildirim kapatma
+    const notifications = document.querySelectorAll('.admin-notification');
+    if (notifications.length > 0) {
+        notifications.forEach(function(notification) {
+            const closeBtn = notification.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    notification.classList.add('closing');
+                    setTimeout(function() {
+                        notification.remove();
+                    }, 300);
+                });
+            }
+
+            // Otomatik kapanma
+            if (notification.dataset.autoDismiss) {
+                const delay = parseInt(notification.dataset.autoDismiss) || 5000;
+                setTimeout(function() {
+                    notification.classList.add('closing');
+                    setTimeout(function() {
+                        notification.remove();
+                    }, 300);
+                }, delay);
+            }
+        });
+    }
+
+    // Dosya yükleme önizleme
+    const fileInputs = document.querySelectorAll('.custom-file-input');
+    if (fileInputs.length > 0) {
+        fileInputs.forEach(function(input) {
+            input.addEventListener('change', function(e) {
+                const fileName = this.files[0].name;
+                const previewContainer = document.querySelector(this.dataset.preview);
+                const fileLabel = this.nextElementSibling;
                 
-                // Medya manager modalını aç
-                const mediaModal = new bootstrap.Modal(document.getElementById('mediaManagerModal'));
-                mediaModal.show();
+                if (fileLabel) {
+                    fileLabel.textContent = fileName;
+                }
                 
-                // Seçilen medya için event listener
-                const mediaItems = document.querySelectorAll('.media-item');
-                mediaItems.forEach(item => {
-                    item.addEventListener('click', function() {
-                        const mediaId = this.getAttribute('data-id');
-                        const mediaUrl = this.getAttribute('data-url');
-                        
-                        // Hedef inputa ID'yi ata
-                        document.getElementById(targetInput).value = mediaId;
-                        
-                        // Eğer önizleme varsa URL'yi ata
-                        if (targetPreview) {
-                            document.getElementById(targetPreview).src = mediaUrl;
-                            document.getElementById(targetPreview).classList.remove('d-none');
+                if (previewContainer && this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        if (previewContainer.tagName === 'IMG') {
+                            previewContainer.src = e.target.result;
+                        } else {
+                            previewContainer.style.backgroundImage = `url('${e.target.result}')`;
                         }
-                        
-                        // Modalı kapat
-                        mediaModal.hide();
-                    });
+                    }
+                    
+                    reader.readAsDataURL(this.files[0]);
+                }
+            });
+        });
+    }
+
+    // Tarih formatı
+    const formatDate = function(date) {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}.${month}.${year}`;
+    };
+
+    // Responsive tablo için data-label ekleme
+    const tables = document.querySelectorAll('.table-responsive-stack');
+    if (tables.length > 0) {
+        tables.forEach(function(table) {
+            const thArray = [];
+            table.querySelectorAll('thead th').forEach(function(th) {
+                thArray.push(th.textContent);
+            });
+            
+            table.querySelectorAll('tbody tr').forEach(function(tr) {
+                tr.querySelectorAll('td').forEach(function(td, index) {
+                    td.setAttribute('data-label', thArray[index]);
                 });
             });
         });
     }
-    
-    // Kategori ağacı düzenleme
-    const categoryTree = document.getElementById('categoryTree');
-    if (categoryTree) {
-        // Dragula veya benzeri bir kütüphane ile sürükle bırak özelliği eklenebilir
+
+    // Modal içinde form submit
+    const modalForms = document.querySelectorAll('.modal form');
+    if (modalForms.length > 0) {
+        modalForms.forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                const url = form.getAttribute('action');
+                const method = form.getAttribute('method') || 'POST';
+                
+                fetch(url, {
+                    method: method,
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Başarılı olduğunda
+                        const modal = bootstrap.Modal.getInstance(form.closest('.modal'));
+                        modal.hide();
+                        
+                        // Sayfayı yenile veya bildirim göster
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            showNotification('Başarılı', data.message || 'İşlem başarıyla tamamlandı', 'success');
+                            if (data.reload) {
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 1000);
+                            }
+                        }
+                    } else {
+                        // Hata durumunda
+                        showNotification('Hata', data.message || 'Bir hata oluştu', 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Hata', 'Bir hata oluştu: ' + error.message, 'error');
+                });
+            });
+        });
     }
-    
-    // Slug oluşturma (URL dostu metin)
-    const titleInput = document.getElementById('title');
-    const slugInput = document.getElementById('slug');
-    
-    if (titleInput && slugInput) {
-        titleInput.addEventListener('keyup', function() {
-            // Slug alanı boşsa veya başlangıçta oluşturulmuşsa otomatik slug oluştur
-            if (slugInput.getAttribute('data-autogenerate') === 'true') {
-                slugInput.value = createSlug(this.value);
+
+    // Bildirim gösterme
+    window.showNotification = function(title, message, type = 'info') {
+        const container = document.querySelector('.notification-container');
+        if (!container) return;
+        
+        const notification = document.createElement('div');
+        notification.className = `admin-notification ${type}`;
+        notification.dataset.autoDismiss = '5000';
+        
+        notification.innerHTML = `
+            <div class="notification-icon">
+                <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}-fill"></i>
+            </div>
+            <div class="notification-content">
+                <h6>${title}</h6>
+                <p>${message}</p>
+            </div>
+            <button class="close-btn">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+        
+        container.appendChild(notification);
+        
+        // Animasyon için zaman vermek
+        setTimeout(() => {
+            notification.classList.add('show');
+        }, 10);
+        
+        // Kapatma butonu
+        notification.querySelector('.close-btn').addEventListener('click', function() {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        });
+        
+        // Otomatik kapanma
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    };
+
+    // Sayfa işlemleri için AJAX fonksiyonları
+    window.adminAPI = {
+        // İçerik silme
+        deleteItem: function(url, itemId, confirmMessage = 'Bu öğeyi silmek istediğinize emin misiniz?') {
+            if (confirm(confirmMessage)) {
+                fetch(`${url}/${itemId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Başarılı', data.message || 'Öğe başarıyla silindi', 'success');
+                        const elementToRemove = document.querySelector(`[data-id="${itemId}"]`);
+                        if (elementToRemove) {
+                            elementToRemove.remove();
+                        } else {
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        }
+                    } else {
+                        showNotification('Hata', data.message || 'Silme işlemi başarısız oldu', 'error');
+                    }
+                })
+                .catch(error => {
+                    showNotification('Hata', 'Bir hata oluştu: ' + error.message, 'error');
+                });
             }
-        });
+        },
         
-        // Manual slug düzenlendiğinde, otomatik oluşturmayı devre dışı bırak
-        slugInput.addEventListener('input', function() {
-            this.setAttribute('data-autogenerate', 'false');
-        });
+        // Durumu güncelleme
+        updateStatus: function(url, itemId, status) {
+            fetch(`${url}/${itemId}/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Başarılı', data.message || 'Durum başarıyla güncellendi', 'success');
+                    // Status badge güncelleme
+                    const statusBadge = document.querySelector(`[data-id="${itemId}"] .status-badge`);
+                    if (statusBadge) {
+                        statusBadge.className = `status-badge status-badge-${status.toLowerCase()}`;
+                        statusBadge.textContent = status;
+                    } else {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    }
+                } else {
+                    showNotification('Hata', data.message || 'Durum güncelleme başarısız oldu', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Hata', 'Bir hata oluştu: ' + error.message, 'error');
+            });
+        },
         
-        // Slug oluşturucu yardımcı fonksiyonu
-        function createSlug(text) {
-            // Türkçe karakterleri dönüştür
-            const turkishChars = {'ç':'c', 'ğ':'g', 'ı':'i', 'ö':'o', 'ş':'s', 'ü':'u', 'Ç':'C', 'Ğ':'G', 'İ':'I', 'Ö':'O', 'Ş':'S', 'Ü':'U'};
+        // Toplu işlemler
+        bulkAction: function(url, action, ids) {
+            if (!ids || ids.length === 0) {
+                showNotification('Uyarı', 'Lütfen en az bir öğe seçin', 'warning');
+                return;
+            }
             
-            return text.toString().toLowerCase()
-                .replace(/[çğıöşüÇĞİÖŞÜ]/g, function(letter) { return turkishChars[letter] || letter; })
-                .replace(/\s+/g, '-')           // Boşlukları tire ile değiştir
-                .replace(/[^\w\-]+/g, '')       // Alfanümerik ve tire dışındaki karakterleri kaldır
-                .replace(/\-\-+/g, '-')         // Birden fazla tireyi tek tireye indirge
-                .replace(/^-+/, '')             // Baştaki tireleri kaldır
-                .replace(/-+$/, '');            // Sondaki tireleri kaldır
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    action: action,
+                    ids: ids
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Başarılı', data.message || 'İşlem başarıyla tamamlandı', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('Hata', data.message || 'İşlem başarısız oldu', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Hata', 'Bir hata oluştu: ' + error.message, 'error');
+            });
+        },
+        
+        // Sıralama güncelleme
+        updateOrder: function(url, items) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ items: items })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Başarılı', data.message || 'Sıralama başarıyla güncellendi', 'success');
+                } else {
+                    showNotification('Hata', data.message || 'Sıralama güncelleme başarısız oldu', 'error');
+                }
+            })
+            .catch(error => {
+                showNotification('Hata', 'Bir hata oluştu: ' + error.message, 'error');
+            });
         }
-    }
-    
-    // Tarih formatı için flatpickr veya benzeri bir kütüphane kullanılabilir
-    
-    // Dashboard için grafikler (Chart.js veya benzeri bir kütüphane ile)
-    const visitorChart = document.getElementById('visitorChart');
-    if (visitorChart) {
-        // Chart.js veya benzeri bir kütüphane ile ziyaretçi grafiği oluşturulabilir
-    }
+    };
 }); 

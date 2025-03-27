@@ -213,4 +213,388 @@ body {
         margin-left: 0;
         width: 100%;
     }
+}
+
+/* Admin Panel CSS */
+:root {
+    --primary-color: #3f51b5;
+    --danger-color: #ea4335;
+    --success-color: #34a853;
+    --warning-color: #fbbc05;
+    --info-color: #4285f4;
+    --sidebar-width: 260px;
+    --sidebar-collapsed-width: 70px;
+    --header-height: 60px;
+}
+
+/* Temel Layout */
+.admin-layout {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+}
+
+/* Sidebar */
+.admin-sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    background-color: #323232;
+    color: #fff;
+    padding: 1rem;
+    overflow-y: auto;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    transition: all 0.3s ease;
+}
+
+.admin-sidebar .navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    padding: 0.75rem 0;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.admin-sidebar .navbar-brand i {
+    margin-right: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.admin-sidebar .nav-link {
+    color: rgba(255, 255, 255, 0.7);
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+    border-radius: 0.25rem;
+    display: flex;
+    align-items: center;
+}
+
+.admin-sidebar .nav-link i {
+    margin-right: 0.75rem;
+    font-size: 1.1rem;
+    width: 1.5rem;
+    text-align: center;
+}
+
+.admin-sidebar .nav-link:hover {
+    color: #fff;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.admin-sidebar .nav-link.active {
+    color: #fff;
+    background-color: var(--primary-color);
+}
+
+/* Content Area */
+.admin-content {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    overflow-y: auto;
+    height: 100vh;
+    transition: all 0.3s ease;
+    background-color: #f5f5f5;
+}
+
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    height: var(--header-height);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.page-content {
+    padding: 1.5rem;
+}
+
+/* Dashboard */
+.dashboard-container .card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dashboard-container .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Tablolar */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table th {
+    font-weight: 600;
+    color: #555;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(63, 81, 181, 0.05);
+}
+
+/* Formlar */
+.form-card {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #333;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(63, 81, 181, 0.25);
+}
+
+/* Butonlar */
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background-color: #303f9f;
+    border-color: #303f9f;
+}
+
+.btn-outline-primary {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Medya Galerisi */
+.media-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.media-item {
+    position: relative;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+}
+
+.media-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.media-actions {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    display: none;
+}
+
+.media-item:hover .media-actions {
+    display: flex;
+}
+
+.media-info {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+    .admin-sidebar {
+        width: var(--sidebar-collapsed-width);
+    }
+    
+    .admin-sidebar .nav-link span {
+        display: none;
+    }
+    
+    .admin-sidebar .nav-link i {
+        margin-right: 0;
+    }
+    
+    .admin-content {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+    
+    .admin-sidebar .navbar-brand span {
+        display: none;
+    }
+}
+
+@media (max-width: 576px) {
+    .admin-sidebar {
+        width: 0;
+        padding: 0;
+    }
+    
+    .admin-content {
+        margin-left: 0;
+    }
+    
+    .sidebar-toggle-btn {
+        display: block;
+    }
+}
+
+/* Animasyonlar */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+/* İstatistik Kartları */
+.stat-card {
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    padding: 1.5rem;
+    background-color: #fff;
+    height: 100%;
+}
+
+.stat-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.stat-title {
+    font-size: 0.875rem;
+    color: #777;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-change {
+    font-size: 0.875rem;
+}
+
+.stat-change.positive {
+    color: var(--success-color);
+}
+
+.stat-change.negative {
+    color: var(--danger-color);
+}
+
+/* Tab Menüleri */
+.admin-tabs {
+    background-color: #fff;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+}
+
+.admin-tabs .nav-link {
+    color: #555;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 0;
+}
+
+.admin-tabs .nav-link.active {
+    color: var(--primary-color);
+    background-color: transparent;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.admin-tabs .nav-link:hover:not(.active) {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.tab-content {
+    padding: 1.5rem;
+}
+
+/* Etiketler ve Badge'ler */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 2rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-badge-published {
+    background-color: rgba(52, 168, 83, 0.15);
+    color: #34a853;
+}
+
+.status-badge-draft {
+    background-color: rgba(251, 188, 5, 0.15);
+    color: #fbbc05;
+}
+
+.status-badge-pending {
+    background-color: rgba(66, 133, 244, 0.15);
+    color: #4285f4;
+}
+
+/* TinyMCE Düzenleyici */
+.tox-tinymce {
+    border-radius: 0.25rem !important;
+    border-color: #ced4da !important;
+}
+
+.tox-statusbar {
+    border-top: 1px solid #ced4da !important;
+}
+
+/* Loading Spinner */
+.admin-loading {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.admin-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(63, 81, 181, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid var(--primary-color);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 } 

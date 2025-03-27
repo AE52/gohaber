@@ -1,0 +1,363 @@
+{{ template "admin/layout.html" . }}
+
+{{ define "embed" }}
+<div class="container-fluid">
+    <!-- Üst Eylem Çubuğu -->
+    <div class="row mb-4">
+        <div class="col-md-6 d-flex align-items-center">
+            <h4 class="mb-0">Haberler</h4>
+            <span class="ms-2 badge bg-primary">{{ .TotalCount }}</span>
+        </div>
+        <div class="col-md-6 text-md-end">
+            <a href="/admin/haberler/yeni" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Yeni Haber
+            </a>
+            <button type="button" class="btn btn-outline-secondary ms-2 dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-filter"></i> Filtreler
+            </button>
+            <div class="dropdown-menu dropdown-menu-end p-3" style="width: 300px;">
+                <form method="GET" action="/admin/haberler">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Durum</label>
+                        <select class="form-select form-select-sm" name="status" id="status">
+                            <option value="">Tümü</option>
+                            <option value="published" {{ if eq .Filters.Status "published" }}selected{{ end }}>Yayında</option>
+                            <option value="draft" {{ if eq .Filters.Status "draft" }}selected{{ end }}>Taslak</option>
+                            <option value="pending" {{ if eq .Filters.Status "pending" }}selected{{ end }}>İnceleme Bekliyor</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Kategori</label>
+                        <select class="form-select form-select-sm" name="category" id="category">
+                            <option value="">Tümü</option>
+                            {{ range .Categories }}
+                            <option value="{{ .ID }}" {{ if eq $.Filters.CategoryID .ID }}selected{{ end }}>{{ .Name }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="author" class="form-label">Yazar</label>
+                        <select class="form-select form-select-sm" name="author" id="author">
+                            <option value="">Tümü</option>
+                            {{ range .Authors }}
+                            <option value="{{ .ID }}" {{ if eq $.Filters.AuthorID .ID }}selected{{ end }}>{{ .FullName }}</option>
+                            {{ end }}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="search" class="form-label">Arama</label>
+                        <input type="text" class="form-control form-control-sm" id="search" name="q" value="{{ .Filters.Query }}" placeholder="Başlık, içerik...">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-sm">Uygula</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sonuç tablosu -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th style="width: 40px">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="selectAll">
+                                </div>
+                            </th>
+                            <th style="width: 80px"></th>
+                            <th>
+                                <a href="/admin/haberler?sort=title&order={{ if eq .Sort.Field "title" }}{{ if eq .Sort.Order "asc" }}desc{{ else }}asc{{ end }}{{ else }}asc{{ end }}" class="text-decoration-none text-dark">
+                                    Başlık
+                                    {{ if eq .Sort.Field "title" }}
+                                    <i class="bi bi-arrow-{{ if eq .Sort.Order "asc" }}up{{ else }}down{{ end }}"></i>
+                                    {{ end }}
+                                </a>
+                            </th>
+                            <th>Kategori</th>
+                            <th>Yazar</th>
+                            <th>
+                                <a href="/admin/haberler?sort=status&order={{ if eq .Sort.Field "status" }}{{ if eq .Sort.Order "asc" }}desc{{ else }}asc{{ end }}{{ else }}asc{{ end }}" class="text-decoration-none text-dark">
+                                    Durum
+                                    {{ if eq .Sort.Field "status" }}
+                                    <i class="bi bi-arrow-{{ if eq .Sort.Order "asc" }}up{{ else }}down{{ end }}"></i>
+                                    {{ end }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin/haberler?sort=view_count&order={{ if eq .Sort.Field "view_count" }}{{ if eq .Sort.Order "asc" }}desc{{ else }}asc{{ end }}{{ else }}desc{{ end }}" class="text-decoration-none text-dark">
+                                    Görüntülenme
+                                    {{ if eq .Sort.Field "view_count" }}
+                                    <i class="bi bi-arrow-{{ if eq .Sort.Order "asc" }}up{{ else }}down{{ end }}"></i>
+                                    {{ end }}
+                                </a>
+                            </th>
+                            <th>
+                                <a href="/admin/haberler?sort=published_at&order={{ if eq .Sort.Field "published_at" }}{{ if eq .Sort.Order "asc" }}desc{{ else }}asc{{ end }}{{ else }}desc{{ end }}" class="text-decoration-none text-dark">
+                                    Tarih
+                                    {{ if eq .Sort.Field "published_at" }}
+                                    <i class="bi bi-arrow-{{ if eq .Sort.Order "asc" }}up{{ else }}down{{ end }}"></i>
+                                    {{ end }}
+                                </a>
+                            </th>
+                            <th style="width: 180px">İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{ range .Articles }}
+                        <tr class="selectable-row" data-id="{{ .ID }}">
+                            <td>
+                                <div class="form-check">
+                                    <input class="form-check-input item-checkbox" type="checkbox" value="{{ .ID }}">
+                                </div>
+                            </td>
+                            <td>
+                                {{ if .FeaturedImage }}
+                                <img src="{{ .FeaturedImage }}" class="img-thumbnail" alt="{{ .Title }}" style="width: 60px; height: 45px; object-fit: cover;">
+                                {{ else }}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="width: 60px; height: 45px;">
+                                    <i class="bi bi-image text-muted"></i>
+                                </div>
+                                {{ end }}
+                            </td>
+                            <td>
+                                <div>
+                                    <a href="/admin/haberler/{{ .ID }}" class="text-decoration-none fw-medium text-dark">{{ .Title }}</a>
+                                </div>
+                                <div class="text-muted small">
+                                    <span class="me-2">
+                                        <i class="bi bi-calendar-event"></i> 
+                                        {{ formatDate .CreatedAt }}
+                                    </span>
+                                    {{ if .IsFeatured }}
+                                    <span class="badge bg-warning text-dark">Öne Çıkan</span>
+                                    {{ end }}
+                                </div>
+                            </td>
+                            <td>
+                                <a href="/admin/haberler?category={{ .CategoryID }}" class="badge bg-light text-dark text-decoration-none">
+                                    {{ .Category.Name }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="/admin/haberler?author={{ .AuthorID }}" class="text-decoration-none">
+                                    {{ .Author.FullName }}
+                                </a>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="status-badge status-badge-{{ .Status }} dropdown-toggle border-0 bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        {{ if eq .Status "published" }}
+                                        Yayında
+                                        {{ else if eq .Status "draft" }}
+                                        Taslak
+                                        {{ else if eq .Status "pending" }}
+                                        İnceleme Bekliyor
+                                        {{ end }}
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="changeStatus({{ .ID }}, 'published'); return false;">
+                                                <i class="bi bi-check-circle me-2 text-success"></i> Yayında
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="changeStatus({{ .ID }}, 'draft'); return false;">
+                                                <i class="bi bi-pencil-square me-2 text-warning"></i> Taslak
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="changeStatus({{ .ID }}, 'pending'); return false;">
+                                                <i class="bi bi-hourglass-split me-2 text-info"></i> İnceleme Bekliyor
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                            <td>{{ .ViewCount }}</td>
+                            <td>
+                                {{ if .PublishedAt }}
+                                {{ formatDate .PublishedAt }}
+                                {{ else }}
+                                <span class="text-muted">-</span>
+                                {{ end }}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/haber/{{ .Slug }}" target="_blank" class="btn btn-outline-secondary" title="Görüntüle">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="/admin/haberler/{{ .ID }}" class="btn btn-outline-primary" title="Düzenle">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="/admin/haberler/{{ .ID }}/kopya" class="btn btn-outline-info" title="Kopyala">
+                                        <i class="bi bi-copy"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteArticle({{ .ID }}, '{{ .Title }}')" title="Sil">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ else }}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-search fs-3 d-block mb-2"></i>
+                                    <p>Arama kriterlerinize uygun haber bulunamadı.</p>
+                                    <a href="/admin/haberler" class="btn btn-sm btn-outline-primary">Tüm haberleri göster</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {{ end }}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <div class="bulk-actions-wrapper">
+                <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle bulk-actions-btn disabled" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        Toplu İşlemler (<span class="count">0</span>)
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="bulkAction('status-published'); return false;">
+                                <i class="bi bi-check-circle me-2 text-success"></i> Yayınla
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="bulkAction('status-draft'); return false;">
+                                <i class="bi bi-pencil-square me-2 text-warning"></i> Taslak Yap
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="bulkAction('featured-add'); return false;">
+                                <i class="bi bi-star me-2 text-warning"></i> Öne Çıkar
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="#" onclick="bulkAction('featured-remove'); return false;">
+                                <i class="bi bi-star-fill me-2 text-secondary"></i> Öne Çıkarma
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item text-danger" href="#" onclick="bulkAction('delete'); return false;">
+                                <i class="bi bi-trash me-2"></i> Sil
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Sayfalama -->
+            {{ if gt .Pagination.TotalPages 1 }}
+            <nav aria-label="Sayfalama">
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item {{ if eq .Pagination.CurrentPage 1 }}disabled{{ end }}">
+                        <a class="page-link" href="/admin/haberler?page={{ sub .Pagination.CurrentPage 1 }}{{ .Pagination.QueryString }}" aria-label="Önceki">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    
+                    {{ range .Pagination.Pages }}
+                    <li class="page-item {{ if eq . $.Pagination.CurrentPage }}active{{ end }}">
+                        <a class="page-link" href="/admin/haberler?page={{ . }}{{ $.Pagination.QueryString }}">{{ . }}</a>
+                    </li>
+                    {{ end }}
+                    
+                    <li class="page-item {{ if eq .Pagination.CurrentPage .Pagination.TotalPages }}disabled{{ end }}">
+                        <a class="page-link" href="/admin/haberler?page={{ add .Pagination.CurrentPage 1 }}{{ .Pagination.QueryString }}" aria-label="Sonraki">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            {{ end }}
+        </div>
+    </div>
+</div>
+
+<!-- Silme Onay Modalı -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteConfirmModalLabel">Haberi Sil</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+            </div>
+            <div class="modal-body">
+                <p><span id="articleTitle"></span> başlıklı haberi silmek istediğinize emin misiniz?</p>
+                <p class="text-danger">Bu işlem geri alınamaz!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteButton">Sil</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Haber Listesi JavaScript -->
+<script>
+// Durum değiştirme
+function changeStatus(id, status) {
+    adminAPI.updateStatus('/admin/api/haberler', id, status);
+}
+
+// Haber silme
+function deleteArticle(id, title) {
+    const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+    document.getElementById('articleTitle').textContent = title;
+    
+    document.getElementById('confirmDeleteButton').onclick = function() {
+        adminAPI.deleteItem('/admin/api/haberler', id, 'Bu haberi silmek istediğinize emin misiniz?');
+        modal.hide();
+    };
+    
+    modal.show();
+}
+
+// Toplu işlem
+function bulkAction(action) {
+    const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (ids.length === 0) {
+        showNotification('Uyarı', 'Lütfen en az bir haber seçin', 'warning');
+        return;
+    }
+    
+    if (action === 'delete') {
+        if (!confirm(`${ids.length} haberi silmek istediğinize emin misiniz? Bu işlem geri alınamaz!`)) {
+            return;
+        }
+    }
+    
+    adminAPI.bulkAction('/admin/api/haberler/bulk', action, ids);
+}
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    // Form filtreleri submiti
+    const filterForm = document.querySelector('form[action="/admin/haberler"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const params = new URLSearchParams();
+            
+            for (const [key, value] of formData.entries()) {
+                if (value) params.append(key, value);
+            }
+            
+            window.location.href = `/admin/haberler?${params.toString()}`;
+        });
+    }
+});
+</script>
+{{ end }} 
