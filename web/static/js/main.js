@@ -116,4 +116,88 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
+    
+    // Tüm resim URL'lerini güncelleyip önbelleği kırmak için zaman damgası ekleyen fonksiyon
+    const updateImageUrls = () => {
+        const allImages = document.querySelectorAll('img[src*="unsplash.com"]');
+        
+        allImages.forEach(img => {
+            // Mevcut URL'i al
+            let currentUrl = img.getAttribute('src');
+            
+            // URL'de zaten ? varsa & ile ekle, yoksa ? ekle
+            const separator = currentUrl.includes('?') ? '&' : '?';
+            
+            // Zaman damgası ekle
+            const timestamp = new Date().getTime();
+            const newUrl = `${currentUrl}${separator}t=${timestamp}`;
+            
+            // Yeni URL'i ayarla
+            img.setAttribute('src', newUrl);
+        });
+    };
+    
+    // Fonksiyonu çağır
+    updateImageUrls();
+    
+    // Varsayılan görsel URL'lerini güncel olanlarla değiştir
+    const replaceImageUrls = () => {
+        const unsplashReplacements = {
+            "istanbulda-su-kesintisi": "https://images.unsplash.com/photo-1563543054715-4f60d55bccb3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "yeni-vergi-duzenlemesi": "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "meteorolojiden-kuvvetli-yagis": "https://images.unsplash.com/photo-1514632595-4944383f2737?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "dolar-rekor-kirdi": "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "merkez-bankasi-faiz": "https://images.unsplash.com/photo-1553729459-efe14ef6055d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "asgari-ucret-zammi": "https://images.unsplash.com/photo-1607863680198-23d4b2565df0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "galatasaray-fenerbahce": "https://images.unsplash.com/photo-1508098682722-e99c643e7f3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "milli-basketbolcu": "https://images.unsplash.com/photo-1518407613690-d9fc990e795f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+            "turkiye-dunya-kupasi": "https://images.unsplash.com/photo-1522778119026-d647f0596c20?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
+        };
+
+        const allImages = document.querySelectorAll('img');
+        
+        allImages.forEach(img => {
+            const src = img.getAttribute('src');
+            const parentLink = img.closest('a');
+            let slug = "";
+            
+            // Eğer img bir a elementi içindeyse, a elementinin href'indeki slug'ı al
+            if (parentLink) {
+                const href = parentLink.getAttribute('href');
+                if (href && href.includes('/haber/')) {
+                    slug = href.split('/haber/')[1];
+                }
+            }
+            
+            // Resim URL'si yoksa veya boşsa ya da placeholder içeriyorsa
+            if (!src || src === '' || src.includes('placeholder')) {
+                // Slug'dan anahtar kelime kontrolü yap
+                for (const [key, url] of Object.entries(unsplashReplacements)) {
+                    if (slug.includes(key)) {
+                        img.setAttribute('src', url);
+                        break;
+                    }
+                }
+            }
+            
+            // Resim Unsplash URL'si değilse, doğrudan slug'a göre eşleşen bir resim ile değiştir
+            if (src && !src.includes('unsplash.com')) {
+                for (const [key, url] of Object.entries(unsplashReplacements)) {
+                    if (slug.includes(key)) {
+                        img.setAttribute('src', url);
+                        break;
+                    }
+                }
+                
+                // Eğer hiçbir slug eşleşmediyse ve resim görüntülenemiyorsa veya boyutu çok küçükse varsayılan bir resim ata
+                img.onerror = function() {
+                    this.src = "https://images.unsplash.com/photo-1586339949916-3e9457bef6d3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+                    this.onerror = null; // Sonsuz döngüyü önle
+                };
+            }
+        });
+    };
+
+    // Sayfa yüklendiğinde replaceImageUrls fonksiyonunu çağır
+    replaceImageUrls();
 }); 

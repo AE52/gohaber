@@ -49,8 +49,14 @@
                     </li>
                 </ul>
                 <form class="d-flex" action="/arama" method="GET">
-                    <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Arama..." aria-label="Ara">
-                    <button class="btn btn-outline-light btn-sm" type="submit"><i class="bi bi-search"></i></button>
+                    <div class="search-box">
+                        <input class="form-control search-input" type="search" name="q" placeholder="Arama..." aria-label="Ara">
+                        <button class="btn search-btn" type="submit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+                                <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+                            </svg>
+                        </button>
+                    </div>
                 </form>
                 <div class="ms-3 d-none d-lg-block">
                     {{ if .IsAuthenticated }}
@@ -81,14 +87,14 @@
     <!-- Son Dakika Bandı -->
     <div class="breaking-news">
         <div class="container">
-            <div class="d-flex align-items-center">
-                <span class="breaking-news-label">SON DAKİKA</span>
+            <div class="d-flex align-items-center w-100">
+                <span class="breaking-news-label"><i class="bi bi-lightning-fill me-1"></i> SON DAKİKA</span>
                 <div class="breaking-news-content">
-                    <a href="#">İstanbul'da su kesintisi! İşte etkilenecek ilçeler</a>
-                    <a href="#">Dolar kuru rekor kırdı! İşte son durum</a>
-                    <a href="#">Memur ve emekli maaşlarına zam! İşte yeni maaşlar</a>
-                    <a href="#">Öğrencilere müjde! Eğitim kredisi başvuruları başladı</a>
-                    <a href="#">Kıdem tazminatında yeni düzenleme! Detaylar belli oldu</a>
+                    <a href="/haber/istanbulda-su-kesintisi-iste-etkilenecek-ilceler">İstanbul'da su kesintisi! İşte etkilenecek ilçeler</a>
+                    <a href="/haber/dolar-rekor-kirdi-iste-son-durum">Dolar kuru rekor kırdı! İşte son durum</a>
+                    <a href="/haber/memur-ve-emekli-maaslarina-zam">Memur ve emekli maaşlarına zam! İşte yeni maaşlar</a>
+                    <a href="/haber/ogrencilere-mujde-egitim-kredisi">Öğrencilere müjde! Eğitim kredisi başvuruları başladı</a>
+                    <a href="/haber/kidem-tazminatinda-yeni-duzenleme">Kıdem tazminatında yeni düzenleme! Detaylar belli oldu</a>
                 </div>
             </div>
         </div>
