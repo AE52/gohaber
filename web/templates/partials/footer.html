@@ -1,0 +1,50 @@
+<footer class="bg-dark text-white py-4 mt-5">
+    <!-- Ad Space: Footer Top -->
+    {{ if .AdSpaces.Footer }}
+    <div class="container mb-4 text-center">
+        <div class="ad-container">
+            {{ .AdSpaces.Footer.Content | raw }}
+        </div>
+    </div>
+    {{ end }}
+    
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <h5>Haber Sitesi</h5>
+                <p>Güncel haberler, doğru bilgi ve tarafsız yaklaşım.</p>
+                <div class="social-links">
+                    <a href="#" class="me-2"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="me-2"><i class="bi bi-twitter"></i></a>
+                    <a href="#" class="me-2"><i class="bi bi-instagram"></i></a>
+                    <a href="#" class="me-2"><i class="bi bi-youtube"></i></a>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h5>Hızlı Erişim</h5>
+                <ul class="list-unstyled">
+                    <li><a href="/" class="text-white">Ana Sayfa</a></li>
+                    <li><a href="/son-dakika" class="text-white">Son Dakika</a></li>
+                    <li><a href="/hakkimizda" class="text-white">Hakkımızda</a></li>
+                    <li><a href="/iletisim" class="text-white">İletişim</a></li>
+                    <li><a href="/kunye" class="text-white">Künye</a></li>
+                    <li><a href="/gizlilik-politikasi" class="text-white">Gizlilik Politikası</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4 mb-3">
+                <h5>Kategoriler</h5>
+                <ul class="list-unstyled">
+                    {{ range .Categories }}
+                    <li><a href="/kategori/{{ .Slug }}" class="text-white">{{ .Name }}</a></li>
+                    {{ end }}
+                </ul>
+            </div>
+        </div>
+        <hr>
+        <div class="row">
+            <div class="col-12 text-center">
+                <p class="mb-0">&copy; {{ .CurrentYear }} Haber Sitesi - Tüm hakları saklıdır.</p>
+            </div>
+        </div>
+    </div>
+</footer> 

@@ -1,0 +1,105 @@
+<header>
+    <!-- Üst Bar (İsteğe Bağlı) -->
+    <div class="top-bar bg-dark py-1 d-none d-md-block">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <span class="small text-light">{{formatDate (now)}}</span>
+                </div>
+                <div class="col-md-6 text-end">
+                    <span class="small text-light me-3"><i class="bi bi-thermometer-half"></i> İstanbul: 18°C</span>
+                    <span class="small text-light"><i class="bi bi-currency-exchange"></i> Dolar: 36.75 TL</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">HABER</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav me-auto mb-0">
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/">ANA SAYFA</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/gundem">GÜNDEM</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/ekonomi">EKONOMİ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/spor">SPOR</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/dunya">DÜNYA</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/teknoloji">TEKNOLOJİ</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/kultur-sanat">KÜLTÜR-SANAT</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/kategori/saglik">SAĞLIK</a>
+                    </li>
+                </ul>
+                <form class="d-flex" action="/arama" method="GET">
+                    <input class="form-control form-control-sm me-2" type="search" name="q" placeholder="Arama..." aria-label="Ara">
+                    <button class="btn btn-outline-light btn-sm" type="submit"><i class="bi bi-search"></i></button>
+                </form>
+                <div class="ms-3 d-none d-lg-block">
+                    {{ if .IsAuthenticated }}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-light btn-sm dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            {{ .User.Username }}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            {{ if eq .User.Role "admin" }}
+                            <li><a class="dropdown-item" href="/admin">Admin Paneli</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {{ end }}
+                            <li><a class="dropdown-item" href="/profil">Profilim</a></li>
+                            <li><a class="dropdown-item" href="/yorumlarim">Yorumlarım</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/cikis">Çıkış Yap</a></li>
+                        </ul>
+                    </div>
+                    {{ else }}
+                    <a href="/giris" class="btn btn-outline-light btn-sm me-2">Giriş</a>
+                    <a href="/kayit" class="btn btn-sm btn-light">Kayıt Ol</a>
+                    {{ end }}
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Son Dakika Bandı -->
+    <div class="breaking-news">
+        <div class="container">
+            <div class="d-flex align-items-center">
+                <span class="breaking-news-label">SON DAKİKA</span>
+                <div class="breaking-news-content">
+                    <a href="#">İstanbul'da su kesintisi! İşte etkilenecek ilçeler</a>
+                    <a href="#">Dolar kuru rekor kırdı! İşte son durum</a>
+                    <a href="#">Memur ve emekli maaşlarına zam! İşte yeni maaşlar</a>
+                    <a href="#">Öğrencilere müjde! Eğitim kredisi başvuruları başladı</a>
+                    <a href="#">Kıdem tazminatında yeni düzenleme! Detaylar belli oldu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reklam Alanı: Header -->
+    {{ if .AdSpaces.Header }}
+    <div class="container mt-2">
+        <div class="ad-container">
+            {{ .AdSpaces.Header.Content | raw }}
+        </div>
+    </div>
+    {{ end }}
+</header>

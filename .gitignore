@@ -1,0 +1,54 @@
+# Go ile ilgili
+/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Proje ile ilgili
+/web/uploads/*
+!/web/uploads/.gitkeep
+/tmp/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# IDE ile ilgili
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Veritabanı ile ilgili
+*.db
+*.sqlite
+
+# İşletim sistemi ile ilgili
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Log dosyaları
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Derleme çıktıları
+/dist/
+haber
+main
+server
+
+# Vendor klasörü
+/vendor/ 
