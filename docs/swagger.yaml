@@ -46,6 +46,19 @@ definitions:
       view_count:
         type: integer
     type: object
+  domain.AuthResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
+        type: string
+      user:
+        $ref: '#/definitions/domain.User'
+    type: object
   domain.Category:
     properties:
       children:
@@ -136,6 +149,35 @@ definitions:
     - name
     - slug
     type: object
+  domain.CreateUserRequest:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        enum:
+        - admin
+        - editor
+        - user
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - confirm_password
+    - email
+    - full_name
+    - password
+    - role
+    - username
+    type: object
   domain.ErrorResponse:
     properties:
       error:
@@ -147,6 +189,44 @@ definitions:
       status:
         example: 400
         type: integer
+    type: object
+  domain.LoginRequest:
+    properties:
+      password:
+        type: string
+      remember:
+        type: boolean
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  domain.Media:
+    properties:
+      content_type:
+        type: string
+      created_at:
+        type: string
+      filename:
+        type: string
+      filesize:
+        type: integer
+      id:
+        type: integer
+      object_name:
+        description: MinIO nesne adı
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  domain.MessageResponse:
+    properties:
+      message:
+        example: İşlem başarıyla tamamlandı
+        type: string
     type: object
   domain.PaginatedResponse:
     properties:
@@ -160,6 +240,28 @@ definitions:
       total_pages:
         type: integer
     type: object
+  domain.RegisterUserRequest:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      username:
+        maxLength: 50
+        minLength: 3
+        type: string
+    required:
+    - confirm_password
+    - email
+    - full_name
+    - password
+    - username
+    type: object
   domain.Tag:
     properties:
       created_at:
@@ -171,6 +273,17 @@ definitions:
       slug:
         type: string
       updated_at:
+        type: string
+    type: object
+  domain.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_in:
+        type: integer
+      refresh_token:
+        type: string
+      token_type:
         type: string
     type: object
   domain.UpdateArticleRequest:
@@ -200,11 +313,38 @@ definitions:
       title:
         type: string
     type: object
+  domain.UpdatePasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      current_password:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - confirm_password
+    - current_password
+    - new_password
+    type: object
   domain.UpdateTagRequest:
     properties:
       name:
         type: string
       slug:
+        type: string
+    type: object
+  domain.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      full_name:
+        type: string
+      profile_image:
+        type: string
+      role:
+        type: string
+      username:
         type: string
     type: object
   domain.User:
@@ -225,6 +365,25 @@ definitions:
       updated_at:
         type: string
       username:
+        type: string
+    type: object
+  handler.ConfirmResetPasswordRequest:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+      token:
+        type: string
+    type: object
+  handler.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  handler.ResetPasswordRequest:
+    properties:
+      email:
         type: string
     type: object
 host: localhost:8080
@@ -479,6 +638,136 @@ paths:
       tags:
       - Admin
       - Etiketler
+  /admin/users:
+    get:
+      consumes:
+      - application/json
+      description: Tüm kullanıcıları sayfalanmış olarak listeler (Sadece Admin)
+      parameters:
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: Kullanıcı durumu filtresi
+        in: query
+        name: status
+        type: string
+      - description: Kullanıcı rolü filtresi
+        in: query
+        name: role
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Kullanıcı listesi
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.User'
+                  type: array
+              type: object
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Kullanıcıları listele
+      tags:
+      - Admin
+      - Kullanıcılar
+    post:
+      consumes:
+      - application/json
+      description: Yeni bir kullanıcı hesabı oluşturur (Sadece Admin)
+      parameters:
+      - description: Kullanıcı bilgileri
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Oluşturulan kullanıcı
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Geçersiz istek formatı veya şifreler eşleşmiyor
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: Kullanıcı adı veya e-posta zaten kullanımda
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Yeni kullanıcı oluştur
+      tags:
+      - Admin
+      - Kullanıcılar
+  /admin/users/{id}:
+    get:
+      consumes:
+      - application/json
+      description: ID'ye göre kullanıcı bilgilerini getirir (Sadece Admin)
+      parameters:
+      - description: Kullanıcı ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Kullanıcı bilgileri
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Geçersiz kullanıcı ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Kullanıcı bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Kullanıcı detayları
+      tags:
+      - Admin
+      - Kullanıcılar
   /articles:
     get:
       consumes:
@@ -710,6 +999,156 @@ paths:
       summary: Etikete göre makaleleri getir
       tags:
       - Makaleler
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Kullanıcı adı ve şifre ile giriş yaparak token alır
+      parameters:
+      - description: Kullanıcı giriş bilgileri
+        in: body
+        name: login
+        required: true
+        schema:
+          $ref: '#/definitions/domain.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Başarılı giriş
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "400":
+          description: Geçersiz istek formatı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Geçersiz kullanıcı adı veya şifre
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Kullanıcı girişi
+      tags:
+      - Kimlik Doğrulama
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh token kullanarak yeni bir access token alır
+      parameters:
+      - description: Refresh token bilgileri
+        in: body
+        name: refresh
+        required: true
+        schema:
+          $ref: '#/definitions/handler.RefreshTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Yeni token bilgileri
+          schema:
+            $ref: '#/definitions/domain.TokenResponse'
+        "400":
+          description: Geçersiz istek formatı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Geçersiz refresh token
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Token yenileme
+      tags:
+      - Kimlik Doğrulama
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Yeni kullanıcı hesabı oluşturur
+      parameters:
+      - description: Kullanıcı kayıt bilgileri
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/domain.RegisterUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Başarılı kayıt
+          schema:
+            $ref: '#/definitions/domain.AuthResponse'
+        "400":
+          description: Geçersiz istek formatı veya şifreler eşleşmiyor
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "409":
+          description: Kullanıcı adı veya e-posta zaten kullanımda
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Kullanıcı kaydı
+      tags:
+      - Kimlik Doğrulama
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: E-posta adresi ile şifre sıfırlama isteği oluşturur
+      parameters:
+      - description: E-posta bilgisi
+        in: body
+        name: reset
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Şifre sıfırlama e-postası gönderildi
+          schema:
+            $ref: '#/definitions/domain.MessageResponse'
+        "400":
+          description: Geçersiz istek formatı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: E-posta adresi bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Şifre sıfırlama isteği
+      tags:
+      - Kimlik Doğrulama
+  /auth/reset-password/confirm:
+    post:
+      consumes:
+      - application/json
+      description: Token ve yeni şifre ile şifre sıfırlama işlemini tamamlar
+      parameters:
+      - description: Token ve yeni şifre bilgileri
+        in: body
+        name: confirm
+        required: true
+        schema:
+          $ref: '#/definitions/handler.ConfirmResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Şifre başarıyla güncellendi
+          schema:
+            $ref: '#/definitions/domain.MessageResponse'
+        "400":
+          description: Geçersiz istek formatı veya şifreler eşleşmiyor
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Geçersiz veya süresi dolmuş token
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Şifre sıfırlama işlemini tamamla
+      tags:
+      - Kimlik Doğrulama
   /tags:
     get:
       consumes:
@@ -827,4 +1266,188 @@ paths:
       summary: Slug ile etiket getir
       tags:
       - Etiketler
+  /uploads:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Sisteme yeni bir dosya yükler
+      parameters:
+      - description: Yüklenecek dosya
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: 'Klasör adı (varsayılan: general)'
+        in: formData
+        name: folder
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Yüklenen medya bilgisi
+          schema:
+            $ref: '#/definitions/domain.Media'
+        "400":
+          description: Dosya yüklenemedi
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Dosya yükle
+      tags:
+      - Medya
+  /uploads/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Belirtilen dosyayı sistemden siler
+      parameters:
+      - description: Medya ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Başarıyla silindi
+        "400":
+          description: Geçersiz medya ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Bu dosyayı silme yetkiniz yok
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Dosya bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Dosya sil
+      tags:
+      - Medya
+    get:
+      consumes:
+      - application/json
+      description: Medya ID'sine göre dosyayı getirir
+      parameters:
+      - description: Medya ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/octet-stream
+      responses:
+        "200":
+          description: Dosya içeriği
+          schema:
+            type: file
+        "400":
+          description: Geçersiz medya ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Dosya bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Dosyayı indir
+      tags:
+      - Medya
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Mevcut giriş yapmış kullanıcının bilgilerini getirir
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Kullanıcı bilgileri
+          schema:
+            $ref: '#/definitions/domain.User'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Mevcut kullanıcı bilgileri
+      tags:
+      - Kullanıcılar
+    put:
+      consumes:
+      - application/json
+      description: Mevcut kullanıcı bilgilerini günceller
+      parameters:
+      - description: Güncellenecek kullanıcı bilgileri
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Güncellenmiş kullanıcı bilgileri
+          schema:
+            $ref: '#/definitions/domain.User'
+        "400":
+          description: Geçersiz istek formatı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Kullanıcı profilini güncelle
+      tags:
+      - Kullanıcılar
+  /users/me/password:
+    put:
+      consumes:
+      - application/json
+      description: Mevcut kullanıcının şifresini günceller
+      parameters:
+      - description: Şifre güncelleme bilgileri
+        in: body
+        name: password
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdatePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Şifre başarıyla güncellendi
+          schema:
+            type: string
+        "400":
+          description: Geçersiz istek formatı veya şifreler eşleşmiyor
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim veya mevcut şifre hatalı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Şifre güncelleme
+      tags:
+      - Kullanıcılar
 swagger: "2.0"

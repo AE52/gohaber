@@ -40,6 +40,15 @@ func (h *UserHandler) RegisterRoutes(router fiber.Router, authMw fiber.Handler, 
 }
 
 // GetCurrentUser mevcut kullanıcı bilgilerini getirir
+// @Summary Mevcut kullanıcı bilgileri
+// @Description Mevcut giriş yapmış kullanıcının bilgilerini getirir
+// @Tags Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Success 200 {object} domain.User "Kullanıcı bilgileri"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Router /users/me [get]
 func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 	user, err := h.userService.GetUserByID(userID)
@@ -51,6 +60,17 @@ func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 }
 
 // UpdateCurrentUser mevcut kullanıcı bilgilerini günceller
+// @Summary Kullanıcı profilini güncelle
+// @Description Mevcut kullanıcı bilgilerini günceller
+// @Tags Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param user body domain.UpdateUserRequest true "Güncellenecek kullanıcı bilgileri"
+// @Success 200 {object} domain.User "Güncellenmiş kullanıcı bilgileri"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Router /users/me [put]
 func (h *UserHandler) UpdateCurrentUser(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 
@@ -93,6 +113,17 @@ func (h *UserHandler) UpdateCurrentUser(c *fiber.Ctx) error {
 }
 
 // UpdatePassword kullanıcı şifresini günceller
+// @Summary Şifre güncelleme
+// @Description Mevcut kullanıcının şifresini günceller
+// @Tags Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param password body domain.UpdatePasswordRequest true "Şifre güncelleme bilgileri"
+// @Success 200 {string} string "Şifre başarıyla güncellendi"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı veya şifreler eşleşmiyor"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim veya mevcut şifre hatalı"
+// @Router /users/me/password [put]
 func (h *UserHandler) UpdatePassword(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(uint)
 
@@ -114,6 +145,20 @@ func (h *UserHandler) UpdatePassword(c *fiber.Ctx) error {
 }
 
 // ListUsers kullanıcıları listeler
+// @Summary Kullanıcıları listele
+// @Description Tüm kullanıcıları sayfalanmış olarak listeler (Sadece Admin)
+// @Tags Admin,Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param page query int false "Sayfa numarası (varsayılan: 1)"
+// @Param limit query int false "Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)"
+// @Param status query string false "Kullanıcı durumu filtresi"
+// @Param role query string false "Kullanıcı rolü filtresi"
+// @Success 200 {object} domain.PaginatedResponse{data=[]domain.User} "Kullanıcı listesi"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Failure 403 {object} domain.ErrorResponse "Yetersiz yetki"
+// @Router /admin/users [get]
 func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 	// Sayfalama parametrelerini al
 	page, _ := strconv.Atoi(c.Query("page", "1"))
@@ -159,6 +204,19 @@ func (h *UserHandler) ListUsers(c *fiber.Ctx) error {
 }
 
 // GetUser ID'ye göre kullanıcı getirir
+// @Summary Kullanıcı detayları
+// @Description ID'ye göre kullanıcı bilgilerini getirir (Sadece Admin)
+// @Tags Admin,Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Kullanıcı ID"
+// @Success 200 {object} domain.User "Kullanıcı bilgileri"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz kullanıcı ID"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Failure 403 {object} domain.ErrorResponse "Yetersiz yetki"
+// @Failure 404 {object} domain.ErrorResponse "Kullanıcı bulunamadı"
+// @Router /admin/users/{id} [get]
 func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
@@ -174,6 +232,19 @@ func (h *UserHandler) GetUser(c *fiber.Ctx) error {
 }
 
 // CreateUser yeni bir kullanıcı oluşturur
+// @Summary Yeni kullanıcı oluştur
+// @Description Yeni bir kullanıcı hesabı oluşturur (Sadece Admin)
+// @Tags Admin,Kullanıcılar
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param user body domain.CreateUserRequest true "Kullanıcı bilgileri"
+// @Success 201 {object} domain.User "Oluşturulan kullanıcı"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı veya şifreler eşleşmiyor"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Failure 403 {object} domain.ErrorResponse "Yetersiz yetki"
+// @Failure 409 {object} domain.ErrorResponse "Kullanıcı adı veya e-posta zaten kullanımda"
+// @Router /admin/users [post]
 func (h *UserHandler) CreateUser(c *fiber.Ctx) error {
 	var req domain.CreateUserRequest
 	if err := c.BodyParser(&req); err != nil {

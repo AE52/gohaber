@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/username/haber/internal/config"
@@ -17,9 +16,8 @@ type Database struct {
 }
 
 // NewDatabase yeni veritabanı bağlantısı oluşturur
-func NewDatabase(config *config.DatabaseConfig) *Database {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.Host, config.Port, config.User, config.Password, config.DBName, config.SSLMode)
+func NewDatabase(config config.IDatabaseConfig) *Database {
+	dsn := config.GetDSN()
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),

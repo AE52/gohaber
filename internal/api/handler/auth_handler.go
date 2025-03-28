@@ -2,9 +2,27 @@ package handler
 
 import (
 	"github.com/gofiber/fiber/v2"
+	"github.com/username/haber/internal/api/middleware"
 	"github.com/username/haber/internal/domain"
 	"github.com/username/haber/internal/service"
 )
+
+// RefreshTokenRequest token yenileme isteği
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+// ResetPasswordRequest şifre sıfırlama isteği
+type ResetPasswordRequest struct {
+	Email string `json:"email"`
+}
+
+// ConfirmResetPasswordRequest şifre sıfırlama onay isteği
+type ConfirmResetPasswordRequest struct {
+	Token           string `json:"token"`
+	NewPassword     string `json:"new_password"`
+	ConfirmPassword string `json:"confirm_password"`
+}
 
 // AuthHandler kimlik doğrulama işleyicileri
 type AuthHandler struct {
@@ -19,138 +37,204 @@ func NewAuthHandler(authService service.IAuthService) *AuthHandler {
 }
 
 // RegisterRoutes rotaları kayıt eder
-func (h *AuthHandler) RegisterRoutes(router fiber.Router) {
-	// Kimlik doğrulama rotaları
-	auth := router.Group("/auth")
-	auth.Post("/login", h.Login)
-	auth.Post("/register", h.Register)
+func (h *AuthHandler) RegisterRoutes(app *fiber.App) {
+	auth := app.Group("/api/auth")
+
+	// Public routes
+	auth.Post("/register", middleware.ValidateRequest(&domain.RegisterUserRequest{}), h.Register)
+	auth.Post("/login", middleware.ValidateRequest(&domain.LoginRequest{}), h.Login)
 	auth.Post("/refresh", h.RefreshToken)
+	auth.Post("/forgot-password", h.ForgotPassword)
 	auth.Post("/reset-password", h.ResetPassword)
-	auth.Post("/reset-password/confirm", h.ConfirmResetPassword)
-}
 
-// Login kullanıcı girişini sağlar
-func (h *AuthHandler) Login(c *fiber.Ctx) error {
-	var req domain.LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Geçersiz istek formatı")
-	}
-
-	user, err := h.authService.Authenticate(req.Username, req.Password)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Token oluşturma mekanizması eklendikten sonra accessToken ve refreshToken değerleri ayarlanacak
-	accessToken := "sample-access-token"
-	refreshToken := "sample-refresh-token"
-
-	return c.JSON(domain.AuthResponse{
-		User:         user,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    3600,
-	})
+	// Protected routes
+	auth.Use(middleware.NewAuthMiddleware(nil).Authenticate)
+	auth.Get("/me", h.GetCurrentUser)
+	auth.Post("/logout", h.Logout)
+	auth.Put("/change-password", middleware.ValidateRequest(&domain.UpdatePasswordRequest{}), h.ChangePassword)
 }
 
 // Register kullanıcı kaydını sağlar
+// @Summary Kullanıcı kaydı
+// @Description Yeni kullanıcı hesabı oluşturur
+// @Tags Kimlik Doğrulama
+// @Accept json
+// @Produce json
+// @Param register body domain.RegisterUserRequest true "Kullanıcı kayıt bilgileri"
+// @Success 201 {object} domain.AuthResponse "Başarılı kayıt"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı veya şifreler eşleşmiyor"
+// @Failure 409 {object} domain.ErrorResponse "Kullanıcı adı veya e-posta zaten kullanımda"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(c *fiber.Ctx) error {
-	var req domain.RegisterUserRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Geçersiz istek formatı")
-	}
+	// Validasyon middleware ile doğrulanmış veriyi al
+	reqData := middleware.GetValidated(c).(*domain.RegisterUserRequest)
 
-	if req.Password != req.ConfirmPassword {
-		return fiber.NewError(fiber.StatusBadRequest, "Şifreler eşleşmiyor")
-	}
-
-	user, err := h.authService.Register(req)
+	// Kullanıcı oluştur
+	user, token, err := h.authService.Register(reqData)
 	if err != nil {
 		return err
 	}
 
-	// TODO: Token oluşturma mekanizması eklendikten sonra accessToken ve refreshToken değerleri ayarlanacak
-	accessToken := "sample-access-token"
-	refreshToken := "sample-refresh-token"
+	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
+		"success": true,
+		"message": "Kullanıcı başarıyla oluşturuldu",
+		"data": fiber.Map{
+			"user":         user,
+			"access_token": token,
+		},
+	})
+}
 
-	return c.Status(fiber.StatusCreated).JSON(domain.AuthResponse{
-		User:         user,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+// Login kullanıcı girişini sağlar
+// @Summary Kullanıcı girişi
+// @Description Kullanıcı adı ve şifre ile giriş yaparak token alır
+// @Tags Kimlik Doğrulama
+// @Accept json
+// @Produce json
+// @Param login body domain.LoginRequest true "Kullanıcı giriş bilgileri"
+// @Success 200 {object} domain.AuthResponse "Başarılı giriş"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı"
+// @Failure 401 {object} domain.ErrorResponse "Geçersiz kullanıcı adı veya şifre"
+// @Router /auth/login [post]
+func (h *AuthHandler) Login(c *fiber.Ctx) error {
+	// Validasyon middleware ile doğrulanmış veriyi al
+	reqData := middleware.GetValidated(c).(*domain.LoginRequest)
+
+	// Giriş yap
+	user, token, err := h.authService.Login(reqData.Username, reqData.Password, reqData.Remember)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"user":         user,
+			"access_token": token,
+		},
+	})
+}
+
+// GetCurrentUser giriş yapmış kullanıcının bilgilerini döndürür
+func (h *AuthHandler) GetCurrentUser(c *fiber.Ctx) error {
+	// Context'ten kullanıcı bilgisini al - user_id anahtarını kullanıyoruz
+	userID := c.Locals("user_id").(uint)
+
+	// Kullanıcıyı servis üzerinden al
+	user, err := h.authService.GetUserByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// UserResponse'a dönüştür
+	userResponse := &domain.UserResponse{
+		ID:           user.ID,
+		Username:     user.Username,
+		Email:        user.Email,
+		FullName:     user.FullName,
+		Role:         user.Role,
+		ProfileImage: user.ProfileImage,
+		CreatedAt:    user.CreatedAt,
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"data": fiber.Map{
+			"user": userResponse,
+		},
 	})
 }
 
 // RefreshToken erişim token'ını yeniler
+// @Summary Token yenileme
+// @Description Refresh token kullanarak yeni bir access token alır
+// @Tags Kimlik Doğrulama
+// @Accept json
+// @Produce json
+// @Param refresh body RefreshTokenRequest true "Refresh token bilgileri"
+// @Success 200 {object} domain.TokenResponse "Yeni token bilgileri"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı"
+// @Failure 401 {object} domain.ErrorResponse "Geçersiz refresh token"
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(c *fiber.Ctx) error {
-	type RefreshTokenRequest struct {
-		RefreshToken string `json:"refresh_token"`
+	// TODO: Refresh token implementasyonu
+	return nil
+}
+
+// Logout kullanıcının çıkış yapmasını sağlar
+func (h *AuthHandler) Logout(c *fiber.Ctx) error {
+	// TODO: Logout implementasyonu
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Başarıyla çıkış yapıldı",
+	})
+}
+
+// ForgotPassword şifre sıfırlama bağlantısı gönderir
+func (h *AuthHandler) ForgotPassword(c *fiber.Ctx) error {
+	// TODO: Şifre sıfırlama implementasyonu
+	var request struct {
+		Email string `json:"email" validate:"required,email"`
 	}
 
-	var req RefreshTokenRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Geçersiz istek formatı")
+	if err := c.BodyParser(&request); err != nil {
+		return domain.NewValidationError([]middleware.ValidationError{
+			{
+				Field:   "email",
+				Message: "Geçersiz email formatı",
+			},
+		})
 	}
 
-	// TODO: Token yenileme sistemi eklenince bu kısım güncellenecek
-	accessToken := "new-sample-access-token"
-	refreshToken := "new-sample-refresh-token"
+	// Validasyon yap
+	if validationErrors, err := middleware.ValidateStruct(request); err != nil {
+		return domain.NewValidationError(validationErrors)
+	}
 
-	return c.JSON(domain.TokenResponse{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		TokenType:    "Bearer",
-		ExpiresIn:    3600,
+	// Email gönderme işlemi yapılır
+	err := h.authService.ForgotPassword(request.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{
+		"success": true,
+		"message": "Şifre sıfırlama bağlantısı email adresinize gönderildi",
 	})
 }
 
 // ResetPassword şifre sıfırlama isteği oluşturur
+// @Summary Şifre sıfırlama isteği
+// @Description E-posta adresi ile şifre sıfırlama isteği oluşturur
+// @Tags Kimlik Doğrulama
+// @Accept json
+// @Produce json
+// @Param reset body ResetPasswordRequest true "E-posta bilgisi"
+// @Success 200 {object} domain.MessageResponse "Şifre sıfırlama e-postası gönderildi"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz istek formatı"
+// @Failure 404 {object} domain.ErrorResponse "E-posta adresi bulunamadı"
+// @Router /auth/reset-password [post]
 func (h *AuthHandler) ResetPassword(c *fiber.Ctx) error {
-	type ResetPasswordRequest struct {
-		Email string `json:"email"`
-	}
-
-	var req ResetPasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Geçersiz istek formatı")
-	}
-
-	token, err := h.authService.ResetPassword(req.Email)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(fiber.Map{
-		"message": "Şifre sıfırlama bağlantısı e-posta adresinize gönderildi",
-		"token":   token, // Gerçek uygulamada bu token client'a gönderilmemeli, sadece e-posta ile iletilmeli
-	})
+	// TODO: Şifre sıfırlama implementasyonu
+	return nil
 }
 
-// ConfirmResetPassword şifre sıfırlama işlemini tamamlar
-func (h *AuthHandler) ConfirmResetPassword(c *fiber.Ctx) error {
-	type ConfirmResetPasswordRequest struct {
-		Token           string `json:"token"`
-		NewPassword     string `json:"new_password"`
-		ConfirmPassword string `json:"confirm_password"`
-	}
+// ChangePassword şifre değiştirir
+func (h *AuthHandler) ChangePassword(c *fiber.Ctx) error {
+	// Validasyon middleware ile doğrulanmış veriyi al
+	reqData := middleware.GetValidated(c).(*domain.UpdatePasswordRequest)
 
-	var req ConfirmResetPasswordRequest
-	if err := c.BodyParser(&req); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Geçersiz istek formatı")
-	}
+	// Kullanıcı ID'sini context'ten al
+	userID := c.Locals("user_id").(uint)
 
-	if req.NewPassword != req.ConfirmPassword {
-		return fiber.NewError(fiber.StatusBadRequest, "Şifreler eşleşmiyor")
-	}
-
-	err := h.authService.ConfirmResetPassword(req.Token, req.NewPassword)
+	// Şifre değiştir
+	err := h.authService.ChangePassword(userID, reqData.CurrentPassword, reqData.NewPassword)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(fiber.Map{
-		"message": "Şifreniz başarıyla güncellendi",
+		"success": true,
+		"message": "Şifreniz başarıyla değiştirildi",
 	})
 }

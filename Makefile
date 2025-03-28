@@ -1,4 +1,4 @@
-.PHONY: build run clean dev test docker-build docker-up docker-down lint migrate-up migrate-down deps
+.PHONY: build run clean dev test docker-build docker-up docker-down lint migrate-up migrate-down deps minio-up
 
 # Ana komutlar
 build:
@@ -23,6 +23,10 @@ docker-up:
 
 docker-down:
 	docker-compose down
+
+# MinIO servisini başlat
+minio-up:
+	docker-compose up -d minio createbuckets
 
 # Test komutları
 test:
@@ -58,6 +62,7 @@ help:
 	@echo "  make docker-build     - Docker imajını oluşturur"
 	@echo "  make docker-up        - Docker containerları başlatır"
 	@echo "  make docker-down      - Docker containerları durdurur"
+	@echo "  make minio-up         - Sadece MinIO ve bucket oluşturucuyu başlatır"
 	@echo "  make test             - Testleri çalıştırır"
 	@echo "  make test-cover       - Test kapsama raporunu oluşturur"
 	@echo "  make migrate-up       - Veritabanı migrationlarını uygular"

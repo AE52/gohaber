@@ -12,10 +12,13 @@ import (
 
 // IAuthService auth işlemleri için service interface
 type IAuthService interface {
-	Register(req domain.RegisterUserRequest) (*domain.User, error)
+	Register(req *domain.RegisterUserRequest) (*domain.User, string, error)
 	Authenticate(username, password string) (*domain.User, error)
+	Login(username, password string, remember bool) (*domain.UserResponse, string, error)
 	ResetPassword(email string) (string, error)
 	ConfirmResetPassword(token, newPassword string) error
+	ForgotPassword(email string) error
+	ChangePassword(userID uint, currentPassword, newPassword string) error
 	GetUserByID(id uint) (*domain.User, error)
 }
 
@@ -32,22 +35,22 @@ func NewAuthService(userRepo repository.IUserRepository) IAuthService {
 }
 
 // Register yeni kullanıcı kaydı yapar
-func (s *AuthService) Register(req domain.RegisterUserRequest) (*domain.User, error) {
+func (s *AuthService) Register(req *domain.RegisterUserRequest) (*domain.User, string, error) {
 	// E-posta adresi zaten kayıtlı mı?
 	existingUser, err := s.userRepo.GetByEmail(req.Email)
 	if err == nil && existingUser != nil {
-		return nil, domain.ErrDuplicateEntry
+		return nil, "", domain.ErrDuplicateEntry
 	}
 
 	// Kullanıcı adı zaten kayıtlı mı?
 	existingUser, err = s.userRepo.GetByUsername(req.Username)
 	if err == nil && existingUser != nil {
-		return nil, domain.ErrDuplicateEntry
+		return nil, "", domain.ErrDuplicateEntry
 	}
 
 	// Şifreleri eşleşiyor mu?
 	if req.Password != req.ConfirmPassword {
-		return nil, &domain.ValidationError{
+		return nil, "", &domain.ValidationError{
 			Field:   "confirm_password",
 			Message: "Şifreler eşleşmiyor",
 		}
@@ -56,7 +59,7 @@ func (s *AuthService) Register(req domain.RegisterUserRequest) (*domain.User, er
 	// Şifreyi hashle
 	passwordHash, err := auth.HashPassword(req.Password)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	// Yeni kullanıcı oluştur
@@ -73,10 +76,44 @@ func (s *AuthService) Register(req domain.RegisterUserRequest) (*domain.User, er
 	// Kullanıcıyı kaydet
 	err = s.userRepo.Create(user)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	return user, nil
+	// Burada gerçek uygulamada token üretilecek
+	token := "sample-access-token-for-" + user.Username
+
+	return user, token, nil
+}
+
+// Login kullanıcıyı giriş yapar ve token döndürür
+func (s *AuthService) Login(username, password string, remember bool) (*domain.UserResponse, string, error) {
+	// Önce kullanıcıyı doğrula
+	user, err := s.Authenticate(username, password)
+	if err != nil {
+		return nil, "", err
+	}
+
+	// Kullanıcı yanıtı oluştur
+	userResponse := &domain.UserResponse{
+		ID:           user.ID,
+		Username:     user.Username,
+		Email:        user.Email,
+		FullName:     user.FullName,
+		Role:         user.Role,
+		ProfileImage: user.ProfileImage,
+		CreatedAt:    user.CreatedAt,
+	}
+
+	// Burada gerçek uygulamada token üretilecek
+	// Hatırla seçeneği varsa daha uzun süreli token verilebilir
+	var token string
+	if remember {
+		token = "sample-long-term-token-for-" + user.Username
+	} else {
+		token = "sample-access-token-for-" + user.Username
+	}
+
+	return userResponse, token, nil
 }
 
 // Authenticate kullanıcı girişini doğrular
@@ -97,6 +134,59 @@ func (s *AuthService) Authenticate(username, password string) (*domain.User, err
 	}
 
 	return user, nil
+}
+
+// ForgotPassword şifre sıfırlama e-postası gönderir
+func (s *AuthService) ForgotPassword(email string) error {
+	// Kullanıcıyı e-posta adresine göre bul
+	user, err := s.userRepo.GetByEmail(email)
+	if err != nil {
+		// Güvenlik için kullanıcı bulunamasa bile başarılı mesajı dön
+		return nil
+	}
+
+	// Token oluştur
+	token, err := s.ResetPassword(email)
+	if err != nil {
+		return err
+	}
+
+	// TODO: E-posta gönderme işlemi burada yapılacak
+	// Örnek: emailService.SendPasswordResetEmail(user.Email, token)
+
+	// Şimdilik sadece logla
+	println("Şifre sıfırlama token'ı oluşturuldu: " + token + " kullanıcı: " + user.Email)
+
+	return nil
+}
+
+// ChangePassword kullanıcının şifresini değiştirir
+func (s *AuthService) ChangePassword(userID uint, currentPassword, newPassword string) error {
+	// Kullanıcıyı bul
+	user, err := s.userRepo.GetByID(userID)
+	if err != nil {
+		return err
+	}
+
+	// Mevcut şifreyi doğrula
+	if !auth.CheckPassword(user.PasswordHash, currentPassword) {
+		return &domain.ValidationError{
+			Field:   "current_password",
+			Message: "Mevcut şifre hatalı",
+		}
+	}
+
+	// Yeni şifreyi hashle
+	passwordHash, err := auth.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+
+	// Şifreyi güncelle
+	user.PasswordHash = passwordHash
+	user.UpdatedAt = time.Now()
+
+	return s.userRepo.Update(user)
 }
 
 // ResetPassword şifre sıfırlama işlemini başlatır

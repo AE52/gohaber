@@ -66,3 +66,8 @@ type UploadInfo struct {
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 }
+
+// MessageResponse basit mesaj yanıtı
+type MessageResponse struct {
+	Message string `json:"message" example:"İşlem başarıyla tamamlandı"`
+}

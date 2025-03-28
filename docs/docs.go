@@ -394,6 +394,212 @@ const docTemplate = `{
                 }
             }
         },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Tüm kullanıcıları sayfalanmış olarak listeler (Sadece Admin)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin",
+                    "Kullanıcılar"
+                ],
+                "summary": "Kullanıcıları listele",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Sayfa numarası (varsayılan: 1)",
+                        "name": "page",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Kullanıcı durumu filtresi",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Kullanıcı rolü filtresi",
+                        "name": "role",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Kullanıcı listesi",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/domain.PaginatedResponse"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "#/definitions/domain.User"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Yetersiz yetki",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Yeni bir kullanıcı hesabı oluşturur (Sadece Admin)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin",
+                    "Kullanıcılar"
+                ],
+                "summary": "Yeni kullanıcı oluştur",
+                "parameters": [
+                    {
+                        "description": "Kullanıcı bilgileri",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.CreateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Oluşturulan kullanıcı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı veya şifreler eşleşmiyor",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Yetersiz yetki",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Kullanıcı adı veya e-posta zaten kullanımda",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "ID'ye göre kullanıcı bilgilerini getirir (Sadece Admin)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin",
+                    "Kullanıcılar"
+                ],
+                "summary": "Kullanıcı detayları",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Kullanıcı ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Kullanıcı bilgileri",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz kullanıcı ID",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Yetersiz yetki",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Kullanıcı bulunamadı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/articles": {
             "get": {
                 "description": "Tüm makaleleri sayfalanmış şekilde listeler",
@@ -763,6 +969,236 @@ const docTemplate = `{
                 }
             }
         },
+        "/auth/login": {
+            "post": {
+                "description": "Kullanıcı adı ve şifre ile giriş yaparak token alır",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kimlik Doğrulama"
+                ],
+                "summary": "Kullanıcı girişi",
+                "parameters": [
+                    {
+                        "description": "Kullanıcı giriş bilgileri",
+                        "name": "login",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.LoginRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Başarılı giriş",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Geçersiz kullanıcı adı veya şifre",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/refresh": {
+            "post": {
+                "description": "Refresh token kullanarak yeni bir access token alır",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kimlik Doğrulama"
+                ],
+                "summary": "Token yenileme",
+                "parameters": [
+                    {
+                        "description": "Refresh token bilgileri",
+                        "name": "refresh",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.RefreshTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Yeni token bilgileri",
+                        "schema": {
+                            "$ref": "#/definitions/domain.TokenResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Geçersiz refresh token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/register": {
+            "post": {
+                "description": "Yeni kullanıcı hesabı oluşturur",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kimlik Doğrulama"
+                ],
+                "summary": "Kullanıcı kaydı",
+                "parameters": [
+                    {
+                        "description": "Kullanıcı kayıt bilgileri",
+                        "name": "register",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.RegisterUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Başarılı kayıt",
+                        "schema": {
+                            "$ref": "#/definitions/domain.AuthResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı veya şifreler eşleşmiyor",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Kullanıcı adı veya e-posta zaten kullanımda",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "description": "E-posta adresi ile şifre sıfırlama isteği oluşturur",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kimlik Doğrulama"
+                ],
+                "summary": "Şifre sıfırlama isteği",
+                "parameters": [
+                    {
+                        "description": "E-posta bilgisi",
+                        "name": "reset",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Şifre sıfırlama e-postası gönderildi",
+                        "schema": {
+                            "$ref": "#/definitions/domain.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "E-posta adresi bulunamadı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/reset-password/confirm": {
+            "post": {
+                "description": "Token ve yeni şifre ile şifre sıfırlama işlemini tamamlar",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kimlik Doğrulama"
+                ],
+                "summary": "Şifre sıfırlama işlemini tamamla",
+                "parameters": [
+                    {
+                        "description": "Token ve yeni şifre bilgileri",
+                        "name": "confirm",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/handler.ConfirmResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Şifre başarıyla güncellendi",
+                        "schema": {
+                            "$ref": "#/definitions/domain.MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı veya şifreler eşleşmiyor",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Geçersiz veya süresi dolmuş token",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/tags": {
             "get": {
                 "description": "Tüm etiketleri sayfalanmış şekilde listeler",
@@ -944,6 +1380,295 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/uploads": {
+            "post": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Sisteme yeni bir dosya yükler",
+                "consumes": [
+                    "multipart/form-data"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Medya"
+                ],
+                "summary": "Dosya yükle",
+                "parameters": [
+                    {
+                        "type": "file",
+                        "description": "Yüklenecek dosya",
+                        "name": "file",
+                        "in": "formData",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Klasör adı (varsayılan: general)",
+                        "name": "folder",
+                        "in": "formData"
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Yüklenen medya bilgisi",
+                        "schema": {
+                            "$ref": "#/definitions/domain.Media"
+                        }
+                    },
+                    "400": {
+                        "description": "Dosya yüklenemedi",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/uploads/{id}": {
+            "get": {
+                "description": "Medya ID'sine göre dosyayı getirir",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/octet-stream"
+                ],
+                "tags": [
+                    "Medya"
+                ],
+                "summary": "Dosyayı indir",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Medya ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Dosya içeriği",
+                        "schema": {
+                            "type": "file"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz medya ID",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Dosya bulunamadı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Belirtilen dosyayı sistemden siler",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Medya"
+                ],
+                "summary": "Dosya sil",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Medya ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Başarıyla silindi"
+                    },
+                    "400": {
+                        "description": "Geçersiz medya ID",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Bu dosyayı silme yetkiniz yok",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Dosya bulunamadı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mevcut giriş yapmış kullanıcının bilgilerini getirir",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kullanıcılar"
+                ],
+                "summary": "Mevcut kullanıcı bilgileri",
+                "responses": {
+                    "200": {
+                        "description": "Kullanıcı bilgileri",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mevcut kullanıcı bilgilerini günceller",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kullanıcılar"
+                ],
+                "summary": "Kullanıcı profilini güncelle",
+                "parameters": [
+                    {
+                        "description": "Güncellenecek kullanıcı bilgileri",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.UpdateUserRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Güncellenmiş kullanıcı bilgileri",
+                        "schema": {
+                            "$ref": "#/definitions/domain.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me/password": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Mevcut kullanıcının şifresini günceller",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Kullanıcılar"
+                ],
+                "summary": "Şifre güncelleme",
+                "parameters": [
+                    {
+                        "description": "Şifre güncelleme bilgileri",
+                        "name": "password",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/domain.UpdatePasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Şifre başarıyla güncellendi",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Geçersiz istek formatı veya şifreler eşleşmiyor",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Yetkisiz erişim veya mevcut şifre hatalı",
+                        "schema": {
+                            "$ref": "#/definitions/domain.ErrorResponse"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -1015,6 +1740,26 @@ const docTemplate = `{
                 },
                 "view_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "domain.AuthResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/domain.User"
                 }
             }
         },
@@ -1154,6 +1899,45 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.CreateUserRequest": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "email",
+                "full_name",
+                "password",
+                "role",
+                "username"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "role": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "editor",
+                        "user"
+                    ]
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                }
+            }
+        },
         "domain.ErrorResponse": {
             "type": "object",
             "properties": {
@@ -1168,6 +1952,63 @@ const docTemplate = `{
                 "status": {
                     "type": "integer",
                     "example": 400
+                }
+            }
+        },
+        "domain.LoginRequest": {
+            "type": "object",
+            "required": [
+                "password",
+                "username"
+            ],
+            "properties": {
+                "password": {
+                    "type": "string"
+                },
+                "remember": {
+                    "type": "boolean"
+                },
+                "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.Media": {
+            "type": "object",
+            "properties": {
+                "content_type": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "filename": {
+                    "type": "string"
+                },
+                "filesize": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "object_name": {
+                    "description": "MinIO nesne adı",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "domain.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "İşlem başarıyla tamamlandı"
                 }
             }
         },
@@ -1189,6 +2030,36 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.RegisterUserRequest": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "email",
+                "full_name",
+                "password",
+                "username"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string",
+                    "minLength": 6
+                },
+                "username": {
+                    "type": "string",
+                    "maxLength": 50,
+                    "minLength": 3
+                }
+            }
+        },
         "domain.Tag": {
             "type": "object",
             "properties": {
@@ -1205,6 +2076,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.TokenResponse": {
+            "type": "object",
+            "properties": {
+                "access_token": {
+                    "type": "string"
+                },
+                "expires_in": {
+                    "type": "integer"
+                },
+                "refresh_token": {
+                    "type": "string"
+                },
+                "token_type": {
                     "type": "string"
                 }
             }
@@ -1249,6 +2137,26 @@ const docTemplate = `{
                 }
             }
         },
+        "domain.UpdatePasswordRequest": {
+            "type": "object",
+            "required": [
+                "confirm_password",
+                "current_password",
+                "new_password"
+            ],
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "current_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string",
+                    "minLength": 6
+                }
+            }
+        },
         "domain.UpdateTagRequest": {
             "type": "object",
             "properties": {
@@ -1256,6 +2164,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "domain.UpdateUserRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "full_name": {
+                    "type": "string"
+                },
+                "profile_image": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                },
+                "username": {
                     "type": "string"
                 }
             }
@@ -1286,6 +2214,36 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "username": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.ConfirmResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.RefreshTokenRequest": {
+            "type": "object",
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
+        "handler.ResetPasswordRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
                     "type": "string"
                 }
             }

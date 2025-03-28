@@ -15,6 +15,11 @@ services:
     restart: unless-stopped
     networks:
       - haber-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:6-alpine
@@ -26,6 +31,11 @@ services:
     restart: unless-stopped
     networks:
       - haber-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   minio:
     image: minio/minio:latest
@@ -34,12 +44,40 @@ services:
       - "9000:9000"      # API
       - "9001:9001"      # Web UI
     environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}
+      - MINIO_BROWSER_REDIRECT_URL=http://localhost:9001
     volumes:
       - minio_data:/data
     restart: unless-stopped
     command: server --console-address ":9001" /data
+    networks:
+      - haber-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # MinIO bucket oluşturucu
+  createbuckets:
+    image: minio/mc
+    container_name: haber_minio_setup
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin} --api S3v4;
+      /usr/bin/mc mb --ignore-existing myminio/media-uploads;
+      /usr/bin/mc anonymous set download myminio/media-uploads;
+      /usr/bin/mc mb --ignore-existing myminio/images;
+      /usr/bin/mc anonymous set download myminio/images;
+      /usr/bin/mc mb --ignore-existing myminio/documents;
+      /usr/bin/mc anonymous set download myminio/documents;
+      exit 0;
+      "
     networks:
       - haber-network
 

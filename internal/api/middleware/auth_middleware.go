@@ -19,6 +19,11 @@ func NewAuthMiddleware(jwtAuth *auth.JWTAuth) *AuthMiddleware {
 	}
 }
 
+// Authenticate, Protected metodu için bir alias - kimlik doğrulama gerektiren rotalar için
+func (m *AuthMiddleware) Authenticate(c *fiber.Ctx) error {
+	return m.Protected()(c)
+}
+
 // Protected kimlik doğrulama gerektiren istekleri korur
 func (m *AuthMiddleware) Protected() fiber.Handler {
 	return func(c *fiber.Ctx) error {

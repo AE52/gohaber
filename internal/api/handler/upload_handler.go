@@ -33,6 +33,18 @@ func (h *UploadHandler) RegisterRoutes(router fiber.Router, authMw fiber.Handler
 }
 
 // UploadFile dosya yükleme işlemini gerçekleştirir
+// @Summary Dosya yükle
+// @Description Sisteme yeni bir dosya yükler
+// @Tags Medya
+// @Accept multipart/form-data
+// @Produce json
+// @Security ApiKeyAuth
+// @Param file formData file true "Yüklenecek dosya"
+// @Param folder formData string false "Klasör adı (varsayılan: general)"
+// @Success 201 {object} domain.Media "Yüklenen medya bilgisi"
+// @Failure 400 {object} domain.ErrorResponse "Dosya yüklenemedi"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Router /uploads [post]
 func (h *UploadHandler) UploadFile(c *fiber.Ctx) error {
 	// Dosya bilgilerini al
 	file, err := c.FormFile("file")
@@ -56,6 +68,16 @@ func (h *UploadHandler) UploadFile(c *fiber.Ctx) error {
 }
 
 // GetFile dosyayı getirir
+// @Summary Dosyayı indir
+// @Description Medya ID'sine göre dosyayı getirir
+// @Tags Medya
+// @Accept json
+// @Produce octet-stream
+// @Param id path int true "Medya ID"
+// @Success 200 {file} file "Dosya içeriği"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz medya ID"
+// @Failure 404 {object} domain.ErrorResponse "Dosya bulunamadı"
+// @Router /uploads/{id} [get]
 func (h *UploadHandler) GetFile(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {
@@ -76,6 +98,19 @@ func (h *UploadHandler) GetFile(c *fiber.Ctx) error {
 }
 
 // DeleteFile dosyayı siler
+// @Summary Dosya sil
+// @Description Belirtilen dosyayı sistemden siler
+// @Tags Medya
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param id path int true "Medya ID"
+// @Success 204 "Başarıyla silindi"
+// @Failure 400 {object} domain.ErrorResponse "Geçersiz medya ID"
+// @Failure 401 {object} domain.ErrorResponse "Yetkisiz erişim"
+// @Failure 403 {object} domain.ErrorResponse "Bu dosyayı silme yetkiniz yok"
+// @Failure 404 {object} domain.ErrorResponse "Dosya bulunamadı"
+// @Router /uploads/{id} [delete]
 func (h *UploadHandler) DeleteFile(c *fiber.Ctx) error {
 	id, err := strconv.ParseUint(c.Params("id"), 10, 32)
 	if err != nil {

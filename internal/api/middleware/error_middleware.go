@@ -7,71 +7,80 @@ import (
 	"github.com/username/haber/internal/domain"
 )
 
-// ErrorHandler uygulama genelinde hata yönetimini standartlaştırır
+// ErrorHandler global hata yakalayıcı
 func ErrorHandler() fiber.ErrorHandler {
 	return func(c *fiber.Ctx, err error) error {
-		// Varsayılan hata kodu
-		code := fiber.StatusInternalServerError
-		message := "İç sunucu hatası"
+		// Default 500 status code
+		statusCode := fiber.StatusInternalServerError
+		errorMessage := "İç sunucu hatası"
+		errorCode := "INTERNAL_ERROR"
+		var errorDetails interface{}
 
-		// Domain hatalarına göre özel kodlar
-		var notFoundErr *domain.NotFoundError
-		if errors.As(err, &notFoundErr) {
-			code = fiber.StatusNotFound
-			message = notFoundErr.Error()
+		var appError *domain.AppError
+		if errors.As(err, &appError) {
+			statusCode = appError.StatusCode
+			errorMessage = appError.Message
+			errorCode = string(appError.Code)
+			errorDetails = appError.Details
+		} else {
+			// Spesifik hata tiplerine göre yanıt
+			switch {
+			case errors.Is(err, domain.ErrNotFound):
+				statusCode = fiber.StatusNotFound
+				errorMessage = err.Error()
+				errorCode = "NOT_FOUND"
+			case errors.Is(err, domain.ErrValidationFailed):
+				statusCode = fiber.StatusBadRequest
+				errorMessage = err.Error()
+				errorCode = "VALIDATION_ERROR"
+			case errors.Is(err, domain.ErrUnauthorized):
+				statusCode = fiber.StatusUnauthorized
+				errorMessage = err.Error()
+				errorCode = "UNAUTHORIZED"
+			case errors.Is(err, domain.ErrForbidden):
+				statusCode = fiber.StatusForbidden
+				errorMessage = err.Error()
+				errorCode = "FORBIDDEN"
+			case errors.Is(err, domain.ErrDuplicateEntry):
+				statusCode = fiber.StatusConflict
+				errorMessage = err.Error()
+				errorCode = "DUPLICATE_ENTRY"
+			case errors.Is(err, domain.ErrTooManyRequests):
+				statusCode = fiber.StatusTooManyRequests
+				errorMessage = err.Error()
+				errorCode = "TOO_MANY_REQUESTS"
+			}
 		}
 
-		var validationErr *domain.ValidationError
-		if errors.As(err, &validationErr) {
-			code = fiber.StatusBadRequest
-			message = validationErr.Error()
-		}
-
-		var validationErrs domain.ValidationErrors
+		// Validasyon hatalarını özel olarak işle
+		var validationErrs ValidationError
 		if errors.As(err, &validationErrs) {
-			code = fiber.StatusBadRequest
-			message = validationErrs.Error()
+			statusCode = fiber.StatusBadRequest
+			errorMessage = "Validasyon hatası"
+			errorCode = "VALIDATION_ERROR"
+			errorDetails = validationErrs
 		}
 
-		var authErr *domain.AuthError
-		if errors.As(err, &authErr) {
-			code = fiber.StatusUnauthorized
-			message = authErr.Error()
+		// Hata yanıtını hazırla
+		errResponse := fiber.Map{
+			"success": false,
+			"error": fiber.Map{
+				"code":    errorCode,
+				"message": errorMessage,
+			},
 		}
 
-		// Genel hata türlerini kontrol et
-		if errors.Is(err, domain.ErrNotFound) {
-			code = fiber.StatusNotFound
-			message = "Kayıt bulunamadı"
-		} else if errors.Is(err, domain.ErrInvalidInput) {
-			code = fiber.StatusBadRequest
-			message = "Geçersiz girdi"
-		} else if errors.Is(err, domain.ErrDuplicateEntry) {
-			code = fiber.StatusConflict
-			message = "Kayıt zaten mevcut"
-		} else if errors.Is(err, domain.ErrUnauthorized) {
-			code = fiber.StatusUnauthorized
-			message = "Yetkisiz erişim"
-		} else if errors.Is(err, domain.ErrForbidden) {
-			code = fiber.StatusForbidden
-			message = "Erişim reddedildi"
-		} else if errors.Is(err, domain.ErrValidationFailed) {
-			code = fiber.StatusBadRequest
-			message = "Doğrulama hatası"
+		// Detaylar varsa ekle
+		if errorDetails != nil {
+			errResponse["error"].(fiber.Map)["details"] = errorDetails
 		}
 
-		// Fiber'ın kendi hatalarını kontrol et
-		var fiberErr *fiber.Error
-		if errors.As(err, &fiberErr) {
-			code = fiberErr.Code
-			message = fiberErr.Message
+		// Development ortamında orijinal hata mesajını da gönder
+		if c.App().Config().AppName == "development" && err.Error() != errorMessage {
+			errResponse["error"].(fiber.Map)["debug"] = err.Error()
 		}
 
-		// Content type'ı kontrol et ve uygun yanıt döndür
-		c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-		return c.Status(code).JSON(fiber.Map{
-			"error": message,
-			"code":  code,
-		})
+		// Yanıtı döndür
+		return c.Status(statusCode).JSON(errResponse)
 	}
 }
