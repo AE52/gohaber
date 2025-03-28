@@ -7,7 +7,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/username/haber/internal/config"
-	"github.com/username/haber/internal/models"
+	"github.com/username/haber/internal/domain"
 )
 
 // TokenType token tipini belirtmek için kullanılır
@@ -36,12 +36,17 @@ type JWTAuth struct {
 }
 
 // NewJWTAuth yeni bir JWTAuth örneği oluşturur
-func NewJWTAuth(cfg *config.JWTConfig) *JWTAuth {
+func NewJWTAuth(secret string, accessTokenExp, refreshTokenExp int) *JWTAuth {
+	cfg := &config.JWTConfig{
+		Secret:          secret,
+		AccessTokenExp:  accessTokenExp,
+		RefreshTokenExp: refreshTokenExp,
+	}
 	return &JWTAuth{cfg: cfg}
 }
 
 // GenerateTokens erişim ve yenileme tokenlarını oluşturur
-func (j *JWTAuth) GenerateTokens(user *models.User) (accessToken, refreshToken string, err error) {
+func (j *JWTAuth) GenerateTokens(user *domain.User) (accessToken, refreshToken string, err error) {
 	// Access token oluşturma
 	accessToken, err = j.generateToken(user, AccessToken, time.Minute*time.Duration(j.cfg.AccessTokenExp))
 	if err != nil {
@@ -58,7 +63,7 @@ func (j *JWTAuth) GenerateTokens(user *models.User) (accessToken, refreshToken s
 }
 
 // generateToken belirtilen tipte ve sürede token oluşturur
-func (j *JWTAuth) generateToken(user *models.User, tokenType TokenType, expiration time.Duration) (string, error) {
+func (j *JWTAuth) generateToken(user *domain.User, tokenType TokenType, expiration time.Duration) (string, error) {
 	// Token sona erme süresi
 	expirationTime := time.Now().Add(expiration)
 
@@ -91,8 +96,8 @@ func (j *JWTAuth) generateToken(user *models.User, tokenType TokenType, expirati
 	return tokenString, nil
 }
 
-// ValidateToken tokeni doğrular ve claim'leri döndürür
-func (j *JWTAuth) ValidateToken(tokenString string) (*JWTCustomClaims, error) {
+// ValidateToken tokeni doğrular ve kullanıcı bilgilerini döndürür
+func (j *JWTAuth) ValidateToken(tokenString string) (*domain.User, error) {
 	// Token'ı parse et
 	token, err := jwt.ParseWithClaims(tokenString, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// HS256 algoritmasını kullandığımızı kontrol et
@@ -119,35 +124,62 @@ func (j *JWTAuth) ValidateToken(tokenString string) (*JWTCustomClaims, error) {
 		return nil, errors.New("token claim'leri alınamadı")
 	}
 
-	return claims, nil
-}
-
-// RefreshAccessToken yenileme tokeni ile yeni bir erişim tokeni oluşturur
-func (j *JWTAuth) RefreshAccessToken(refreshTokenString string) (string, error) {
-	// Refresh token'ı doğrula
-	claims, err := j.ValidateToken(refreshTokenString)
-	if err != nil {
-		return "", fmt.Errorf("yenileme tokeni doğrulanamadı: %w", err)
+	// Token tipini kontrol et (sadece erişim tokenleri için)
+	if claims.TokenType != string(AccessToken) {
+		return nil, errors.New("token tipini doğrulama hatası, access token bekleniyor")
 	}
 
-	// Token tipini kontrol et
-	if claims.TokenType != string(RefreshToken) {
-		return "", errors.New("token tipini doğrulama hatası, refresh token bekleniyor")
-	}
-
-	// Kullanıcı nesnesini oluştur
-	user := &models.User{
+	// Kullanıcı nesnesini oluştur ve döndür
+	user := &domain.User{
 		ID:       claims.UserID,
 		Username: claims.Username,
 		Email:    claims.Email,
 		Role:     claims.Role,
 	}
 
-	// Yeni erişim tokeni oluştur
-	accessToken, err := j.generateToken(user, AccessToken, time.Minute*time.Duration(j.cfg.AccessTokenExp))
+	return user, nil
+}
+
+// ValidateRefreshToken yenileme tokenini doğrular ve kullanıcı bilgilerini döndürür
+func (j *JWTAuth) ValidateRefreshToken(refreshTokenString string) (*domain.User, error) {
+	// Token'ı parse et
+	token, err := jwt.ParseWithClaims(refreshTokenString, &JWTCustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// HS256 algoritmasını kullandığımızı kontrol et
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("beklenmeyen imza metodu: %v", token.Header["alg"])
+		}
+
+		// Secret key döndür
+		return []byte(j.cfg.Secret), nil
+	})
+
 	if err != nil {
-		return "", fmt.Errorf("yeni erişim tokeni oluşturulurken hata: %w", err)
+		return nil, fmt.Errorf("token parse hatası: %w", err)
 	}
 
-	return accessToken, nil
+	// Token'ın geçerli olup olmadığını kontrol et
+	if !token.Valid {
+		return nil, errors.New("token geçerli değil")
+	}
+
+	// Token claim'lerini döndür
+	claims, ok := token.Claims.(*JWTCustomClaims)
+	if !ok {
+		return nil, errors.New("token claim'leri alınamadı")
+	}
+
+	// Token tipini kontrol et
+	if claims.TokenType != string(RefreshToken) {
+		return nil, errors.New("token tipini doğrulama hatası, refresh token bekleniyor")
+	}
+
+	// Kullanıcı nesnesini oluştur ve döndür
+	user := &domain.User{
+		ID:       claims.UserID,
+		Username: claims.Username,
+		Email:    claims.Email,
+		Role:     claims.Role,
+	}
+
+	return user, nil
 }

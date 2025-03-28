@@ -1,0 +1,830 @@
+basePath: /api
+definitions:
+  domain.Article:
+    properties:
+      author:
+        allOf:
+        - $ref: '#/definitions/domain.User'
+        description: İlişkiler - JSON dönüşümünde çözünürlük için
+      author_id:
+        type: integer
+      category:
+        $ref: '#/definitions/domain.Category'
+      category_id:
+        type: integer
+      comments:
+        items:
+          $ref: '#/definitions/domain.Comment'
+        type: array
+      content:
+        type: string
+      created_at:
+        type: string
+      featured_image:
+        type: string
+      id:
+        type: integer
+      is_featured:
+        type: boolean
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        description: published, draft, pending
+        type: string
+      summary:
+        type: string
+      tags:
+        items:
+          $ref: '#/definitions/domain.Tag'
+        type: array
+      title:
+        type: string
+      updated_at:
+        type: string
+      view_count:
+        type: integer
+    type: object
+  domain.Category:
+    properties:
+      children:
+        items:
+          $ref: '#/definitions/domain.Category'
+        type: array
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.Comment:
+    properties:
+      article_id:
+        type: integer
+      content:
+        type: string
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_approved:
+        type: boolean
+      parent_id:
+        type: integer
+      replies:
+        items:
+          $ref: '#/definitions/domain.Comment'
+        type: array
+      updated_at:
+        type: string
+      user:
+        allOf:
+        - $ref: '#/definitions/domain.User'
+        description: İlişkiler
+      user_id:
+        type: integer
+    type: object
+  domain.CreateArticleRequest:
+    properties:
+      category_id:
+        type: integer
+      content:
+        type: string
+      featured_image:
+        type: string
+      is_featured:
+        type: boolean
+      published_at:
+        type: string
+      status:
+        enum:
+        - published
+        - draft
+        - pending
+        type: string
+      summary:
+        type: string
+      tag_ids:
+        items:
+          type: integer
+        type: array
+      title:
+        type: string
+    required:
+    - category_id
+    - content
+    - summary
+    - title
+    type: object
+  domain.CreateTagRequest:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    required:
+    - name
+    - slug
+    type: object
+  domain.ErrorResponse:
+    properties:
+      error:
+        example: Hata açıklaması
+        type: string
+      message:
+        example: Detaylı hata mesajı
+        type: string
+      status:
+        example: 400
+        type: integer
+    type: object
+  domain.PaginatedResponse:
+    properties:
+      data: {}
+      page:
+        type: integer
+      per_page:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  domain.Tag:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      slug:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  domain.UpdateArticleRequest:
+    properties:
+      category_id:
+        type: integer
+      content:
+        type: string
+      featured_image:
+        type: string
+      is_featured:
+        type: boolean
+      published_at:
+        type: string
+      status:
+        enum:
+        - published
+        - draft
+        - pending
+        type: string
+      summary:
+        type: string
+      tag_ids:
+        items:
+          type: integer
+        type: array
+      title:
+        type: string
+    type: object
+  domain.UpdateTagRequest:
+    properties:
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  domain.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      full_name:
+        type: string
+      id:
+        type: integer
+      profile_image:
+        type: string
+      role:
+        description: admin, editor, user
+        type: string
+      updated_at:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: destek@haber.example.com
+    name: API Destek Ekibi
+  description: Haber portalı için REST API
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Haber API
+  version: "1.0"
+paths:
+  /admin/articles:
+    post:
+      consumes:
+      - application/json
+      description: Yeni bir makale oluşturur (Sadece admin ve editörler)
+      parameters:
+      - description: Makale bilgileri
+        in: body
+        name: article
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateArticleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Article'
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Yeni makale oluştur
+      tags:
+      - Admin
+      - Makaleler
+  /admin/articles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Bir makaleyi siler (Sadece admin ve editörler)
+      parameters:
+      - description: Makale ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Başarıyla silindi
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Makale bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Makale sil
+      tags:
+      - Admin
+      - Makaleler
+    put:
+      consumes:
+      - application/json
+      description: Mevcut bir makaleyi günceller (Sadece admin ve editörler)
+      parameters:
+      - description: Makale ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Makale bilgileri
+        in: body
+        name: article
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateArticleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Article'
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Makale bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Makale güncelle
+      tags:
+      - Admin
+      - Makaleler
+  /admin/tags:
+    post:
+      consumes:
+      - application/json
+      description: Yeni bir etiket oluşturur (Sadece admin)
+      parameters:
+      - description: Etiket bilgileri
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/domain.CreateTagRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/domain.Tag'
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Yeni etiket oluştur
+      tags:
+      - Admin
+      - Etiketler
+  /admin/tags/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Bir etiketi siler (Sadece admin)
+      parameters:
+      - description: Etiket ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Başarıyla silindi
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Etiket bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Etiket sil
+      tags:
+      - Admin
+      - Etiketler
+    put:
+      consumes:
+      - application/json
+      description: Mevcut bir etiketi günceller (Sadece admin)
+      parameters:
+      - description: Etiket ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Etiket bilgileri
+        in: body
+        name: tag
+        required: true
+        schema:
+          $ref: '#/definitions/domain.UpdateTagRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Tag'
+        "400":
+          description: Geçersiz istek
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "401":
+          description: Yetkisiz erişim
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "403":
+          description: Yetersiz yetki
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Etiket bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Etiket güncelle
+      tags:
+      - Admin
+      - Etiketler
+  /articles:
+    get:
+      consumes:
+      - application/json
+      description: Tüm makaleleri sayfalanmış şekilde listeler
+      parameters:
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      - description: 'Makale durumu (varsayılan: published)'
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Article'
+                  type: array
+              type: object
+      summary: Makaleleri listele
+      tags:
+      - Makaleler
+  /articles/{id}:
+    get:
+      consumes:
+      - application/json
+      description: ID'ye göre makale detayı getirir
+      parameters:
+      - description: Makale ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Article'
+        "400":
+          description: Geçersiz makale ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Makale bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Makale detayı getir
+      tags:
+      - Makaleler
+  /articles/author/{authorID}:
+    get:
+      consumes:
+      - application/json
+      description: Belirli bir yazara ait makaleleri sayfalanmış şekilde listeler
+      parameters:
+      - description: Yazar ID
+        in: path
+        name: authorID
+        required: true
+        type: integer
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Article'
+                  type: array
+              type: object
+        "400":
+          description: Geçersiz yazar ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Yazara göre makaleleri getir
+      tags:
+      - Makaleler
+  /articles/category/{categoryID}:
+    get:
+      consumes:
+      - application/json
+      description: Belirli bir kategoriye ait makaleleri sayfalanmış şekilde listeler
+      parameters:
+      - description: Kategori ID
+        in: path
+        name: categoryID
+        required: true
+        type: integer
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Article'
+                  type: array
+              type: object
+        "400":
+          description: Geçersiz kategori ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Kategoriye göre makaleleri getir
+      tags:
+      - Makaleler
+  /articles/featured:
+    get:
+      consumes:
+      - application/json
+      description: Öne çıkan makaleleri listeler
+      parameters:
+      - description: 'Maksimum makale sayısı (varsayılan: 5, maksimum: 20)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Article'
+            type: array
+      summary: Öne çıkan makaleleri getir
+      tags:
+      - Makaleler
+  /articles/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Slug'a göre makale detayı getirir
+      parameters:
+      - description: Makale Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Article'
+        "404":
+          description: Makale bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Slug ile makale getir
+      tags:
+      - Makaleler
+  /articles/tag/{tagID}:
+    get:
+      consumes:
+      - application/json
+      description: Belirli bir etikete sahip makaleleri sayfalanmış şekilde listeler
+      parameters:
+      - description: Etiket ID
+        in: path
+        name: tagID
+        required: true
+        type: integer
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 10, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Article'
+                  type: array
+              type: object
+        "400":
+          description: Geçersiz etiket ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Etikete göre makaleleri getir
+      tags:
+      - Makaleler
+  /tags:
+    get:
+      consumes:
+      - application/json
+      description: Tüm etiketleri sayfalanmış şekilde listeler
+      parameters:
+      - description: 'Sayfa numarası (varsayılan: 1)'
+        in: query
+        name: page
+        type: integer
+      - description: 'Sayfa başına sonuç sayısı (varsayılan: 20, maksimum: 100)'
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/domain.PaginatedResponse'
+            - properties:
+                data:
+                  items:
+                    $ref: '#/definitions/domain.Tag'
+                  type: array
+              type: object
+      summary: Etiketleri listele
+      tags:
+      - Etiketler
+  /tags/{id}:
+    get:
+      consumes:
+      - application/json
+      description: ID'ye göre etiket detayı getirir
+      parameters:
+      - description: Etiket ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Tag'
+        "400":
+          description: Geçersiz etiket ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "404":
+          description: Etiket bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Etiket detayı getir
+      tags:
+      - Etiketler
+  /tags/article/{articleID}:
+    get:
+      consumes:
+      - application/json
+      deprecated: true
+      description: Belirli bir makaleye bağlı tüm etiketleri getirir (KULLANIM DIŞI)
+      parameters:
+      - description: Makale ID
+        in: path
+        name: articleID
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/domain.Tag'
+            type: array
+        "400":
+          description: Geçersiz makale ID
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+        "501":
+          description: Metot desteklenmiyor
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Makaleye göre etiketleri getir
+      tags:
+      - Etiketler
+  /tags/slug/{slug}:
+    get:
+      consumes:
+      - application/json
+      description: Slug'a göre etiket detayı getirir
+      parameters:
+      - description: Etiket Slug
+        in: path
+        name: slug
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Tag'
+        "404":
+          description: Etiket bulunamadı
+          schema:
+            $ref: '#/definitions/domain.ErrorResponse'
+      summary: Slug ile etiket getir
+      tags:
+      - Etiketler
+swagger: "2.0"

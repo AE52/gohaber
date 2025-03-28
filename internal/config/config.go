@@ -12,6 +12,7 @@ type Config struct {
 	Database DatabaseConfig
 	Redis    RedisConfig
 	JWT      JWTConfig
+	MinIO    MinIOConfig
 }
 
 // ServerConfig sunucu ayarları
@@ -50,6 +51,16 @@ type JWTConfig struct {
 	RefreshTokenExp int // saat cinsinden
 }
 
+// MinIOConfig MinIO nesne depolama ayarları
+type MinIOConfig struct {
+	Endpoint        string
+	AccessKeyID     string
+	SecretAccessKey string
+	UseSSL          bool
+	BucketName      string
+	Location        string
+}
+
 // LoadConfig çevre değişkenlerinden yapılandırmayı yükler
 func LoadConfig() *Config {
 	return &Config{
@@ -81,6 +92,14 @@ func LoadConfig() *Config {
 			AccessTokenExp:  getEnvAsInt("JWT_ACCESS_TOKEN_EXP", 60),   // 60 dakika
 			RefreshTokenExp: getEnvAsInt("JWT_REFRESH_TOKEN_EXP", 168), // 7 gün
 		},
+		MinIO: MinIOConfig{
+			Endpoint:        getEnv("MINIO_ENDPOINT", "localhost:9000"),
+			AccessKeyID:     getEnv("MINIO_ACCESS_KEY", "minioadmin"),
+			SecretAccessKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
+			UseSSL:          getEnvAsBool("MINIO_USE_SSL", false),
+			BucketName:      getEnv("MINIO_BUCKET_NAME", "haber"),
+			Location:        getEnv("MINIO_LOCATION", "eu-west-1"),
+		},
 	}
 }
 
@@ -106,6 +125,14 @@ func getEnv(key, defaultValue string) string {
 func getEnvAsInt(key string, defaultValue int) int {
 	valueStr := getEnv(key, "")
 	if value, err := strconv.Atoi(valueStr); err == nil {
+		return value
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := getEnv(key, "")
+	if value, err := strconv.ParseBool(valueStr); err == nil {
 		return value
 	}
 	return defaultValue

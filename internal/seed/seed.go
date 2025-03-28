@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/username/haber/internal/models"
+	"github.com/username/haber/internal/domain"
 	"github.com/username/haber/pkg/auth"
 	"gorm.io/gorm"
 )
@@ -14,7 +14,7 @@ import (
 func SeedDB(db *gorm.DB) error {
 	// Veritabanını kontrol et, boş değilse seed işlemini atla
 	var userCount int64
-	db.Model(&models.User{}).Count(&userCount)
+	db.Model(&domain.User{}).Count(&userCount)
 	if userCount > 0 {
 		fmt.Println("Veritabanı zaten dolu, seed işlemi atlanıyor.")
 		return nil
@@ -62,7 +62,7 @@ func SeedDB(db *gorm.DB) error {
 }
 
 // seedUsers kullanıcı örnek verilerini oluşturur
-func seedUsers(db *gorm.DB) ([]models.User, error) {
+func seedUsers(db *gorm.DB) ([]domain.User, error) {
 	// Şifreleri hashleme
 	adminPass, err := auth.HashPassword("admin123")
 	if err != nil {
@@ -79,7 +79,7 @@ func seedUsers(db *gorm.DB) ([]models.User, error) {
 		return nil, err
 	}
 
-	users := []models.User{
+	users := []domain.User{
 		{
 			Username:     "admin",
 			Email:        "admin@haber.com",
@@ -122,8 +122,8 @@ func seedUsers(db *gorm.DB) ([]models.User, error) {
 }
 
 // seedCategories kategori örnek verilerini oluşturur
-func seedCategories(db *gorm.DB) ([]models.Category, error) {
-	categories := []models.Category{
+func seedCategories(db *gorm.DB) ([]domain.Category, error) {
+	categories := []domain.Category{
 		{
 			Name:        "Gündem",
 			Slug:        "gundem",
@@ -185,16 +185,11 @@ func seedCategories(db *gorm.DB) ([]models.Category, error) {
 }
 
 // seedTags etiket örnek verilerini oluşturur
-func seedTags(db *gorm.DB) ([]models.Tag, error) {
-	tags := []models.Tag{
+func seedTags(db *gorm.DB) ([]domain.Tag, error) {
+	tags := []domain.Tag{
 		{
-			Name:      "Türkiye",
-			Slug:      "turkiye",
-			CreatedAt: time.Now(),
-		},
-		{
-			Name:      "Dünya",
-			Slug:      "dunya",
+			Name:      "Politika",
+			Slug:      "politika",
 			CreatedAt: time.Now(),
 		},
 		{
@@ -203,18 +198,8 @@ func seedTags(db *gorm.DB) ([]models.Tag, error) {
 			CreatedAt: time.Now(),
 		},
 		{
-			Name:      "Siyaset",
-			Slug:      "siyaset",
-			CreatedAt: time.Now(),
-		},
-		{
-			Name:      "Futbol",
-			Slug:      "futbol",
-			CreatedAt: time.Now(),
-		},
-		{
-			Name:      "Basketbol",
-			Slug:      "basketbol",
+			Name:      "Spor",
+			Slug:      "spor",
 			CreatedAt: time.Now(),
 		},
 		{
@@ -228,23 +213,28 @@ func seedTags(db *gorm.DB) ([]models.Tag, error) {
 			CreatedAt: time.Now(),
 		},
 		{
-			Name:      "Bilim",
-			Slug:      "bilim",
-			CreatedAt: time.Now(),
-		},
-		{
 			Name:      "Eğitim",
 			Slug:      "egitim",
 			CreatedAt: time.Now(),
 		},
 		{
-			Name:      "Kültür",
-			Slug:      "kultur",
+			Name:      "Dünya",
+			Slug:      "dunya",
 			CreatedAt: time.Now(),
 		},
 		{
-			Name:      "Sanat",
-			Slug:      "sanat",
+			Name:      "Yaşam",
+			Slug:      "yasam",
+			CreatedAt: time.Now(),
+		},
+		{
+			Name:      "Analiz",
+			Slug:      "analiz",
+			CreatedAt: time.Now(),
+		},
+		{
+			Name:      "Röportaj",
+			Slug:      "roportaj",
 			CreatedAt: time.Now(),
 		},
 	}
@@ -259,9 +249,15 @@ func seedTags(db *gorm.DB) ([]models.Tag, error) {
 }
 
 // seedArticles makale örnek verilerini oluşturur
-func seedArticles(db *gorm.DB, users []models.User, categories []models.Category, tags []models.Tag) ([]models.Article, error) {
-	// Gündem haberleri
-	gundemArticles := []models.Article{
+func seedArticles(db *gorm.DB, users []domain.User, categories []domain.Category, tags []domain.Tag) ([]domain.Article, error) {
+	// Yardımcı fonksiyon
+	ptrTime := func(t time.Time) *time.Time {
+		return &t
+	}
+
+	// Makaleleri oluştur
+	// Not: Bu sadece iki örnek makale içeriyor, gerçek uygulamada daha fazla ve kategorilere göre çeşitli makaleler eklenebilir
+	articles := []domain.Article{
 		{
 			Title:         "İstanbul'da Su Kesintisi! İşte Etkilenecek İlçeler",
 			Slug:          "istanbulda-su-kesintisi-iste-etkilenecek-ilceler",
@@ -292,141 +288,24 @@ func seedArticles(db *gorm.DB, users []models.User, categories []models.Category
 			CreatedAt:     time.Now().Add(-36 * time.Hour),
 			UpdatedAt:     time.Now(),
 		},
-		{
-			Title:         "Meteoroloji'den Kuvvetli Yağış Uyarısı",
-			Slug:          "meteorolojiden-kuvvetli-yagis-uyarisi",
-			Content:       "Meteoroloji Genel Müdürlüğü tarafından yapılan son tahminlere göre, önümüzdeki hafta ülke genelinde kuvvetli yağış beklenirken, bazı bölgelerde sel riski bulunuyor...",
-			Summary:       "Meteoroloji Genel Müdürlüğü tarafından yapılan son tahminlere göre, önümüzdeki hafta ülke genelinde kuvvetli yağış bekleniyor.",
-			FeaturedImage: "https://images.unsplash.com/photo-1514632595-4944383f2737?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[1].ID,
-			CategoryID:    categories[0].ID,
-			Status:        "published",
-			ViewCount:     85,
-			IsFeatured:    false,
-			PublishedAt:   ptrTime(time.Now().Add(-12 * time.Hour)),
-			CreatedAt:     time.Now().Add(-24 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
 	}
 
-	// Ekonomi haberleri
-	ekonomiArticles := []models.Article{
-		{
-			Title:         "Dolar Rekor Kırdı! İşte Son Durum",
-			Slug:          "dolar-rekor-kirdi-iste-son-durum",
-			Content:       "Dolar kuru bugün uluslararası piyasalardaki gelişmeler ve yurt içindeki ekonomik belirsizliklerin etkisiyle rekor seviyeyi gördü. Dolar kuru sabah saatlerinde...",
-			Summary:       "Dolar kuru bugün rekor seviyeyi görerek tarihi zirveyi gördü.",
-			FeaturedImage: "https://images.unsplash.com/photo-1591696205602-2f950c417cb9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[0].ID,
-			CategoryID:    categories[1].ID,
-			Status:        "published",
-			ViewCount:     230,
-			IsFeatured:    true,
-			PublishedAt:   ptrTime(time.Now().Add(-5 * time.Hour)),
-			CreatedAt:     time.Now().Add(-8 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-		{
-			Title:         "Merkez Bankası Faiz Kararını Açıkladı",
-			Slug:          "merkez-bankasi-faiz-kararini-acikladi",
-			Content:       "Merkez Bankası, bugün gerçekleştirdiği Para Politikası Kurulu toplantısında faiz oranlarıyla ilgili kararını açıkladı. Yapılan açıklamaya göre faiz oranları...",
-			Summary:       "Merkez Bankası, bugün gerçekleştirdiği Para Politikası Kurulu toplantısında faiz oranlarıyla ilgili kararını açıkladı.",
-			FeaturedImage: "https://images.unsplash.com/photo-1553729459-efe14ef6055d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[1].ID,
-			CategoryID:    categories[1].ID,
-			Status:        "published",
-			ViewCount:     180,
-			IsFeatured:    false,
-			PublishedAt:   ptrTime(time.Now().Add(-32 * time.Hour)),
-			CreatedAt:     time.Now().Add(-40 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-		{
-			Title:         "Asgari Ücret Zammı İçin Görüşmeler Başladı",
-			Slug:          "asgari-ucret-zammi-icin-gorusmeler-basladi",
-			Content:       "Asgari ücret zammı için Çalışma Bakanlığı, işçi ve işveren sendikaları arasındaki görüşmeler bugün başladı. Toplantıda, enflasyon oranları ve ekonomik göstergeler eşliğinde...",
-			Summary:       "Asgari ücret zammı için Çalışma Bakanlığı, işçi ve işveren sendikaları arasındaki görüşmeler bugün başladı.",
-			FeaturedImage: "https://images.unsplash.com/photo-1607863680198-23d4b2565df0?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[0].ID,
-			CategoryID:    categories[1].ID,
-			Status:        "published",
-			ViewCount:     160,
-			IsFeatured:    false,
-			PublishedAt:   ptrTime(time.Now().Add(-18 * time.Hour)),
-			CreatedAt:     time.Now().Add(-24 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-	}
-
-	// Spor haberleri
-	sporArticles := []models.Article{
-		{
-			Title:         "Galatasaray, Fenerbahçe Derbisine Hazır",
-			Slug:          "galatasaray-fenerbahce-derbisine-hazir",
-			Content:       "Süper Lig'in 30. haftasında Fenerbahçe ile karşılaşacak olan Galatasaray, hazırlıklarını tamamladı. Teknik direktör Okan Buruk yönetiminde gerçekleştirilen son antrenmanın ardından...",
-			Summary:       "Süper Lig'in 30. haftasında Fenerbahçe ile karşılaşacak olan Galatasaray, hazırlıklarını tamamladı.",
-			FeaturedImage: "https://images.unsplash.com/photo-1508098682722-e99c643e7f3b?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[1].ID,
-			CategoryID:    categories[2].ID,
-			Status:        "published",
-			ViewCount:     320,
-			IsFeatured:    true,
-			PublishedAt:   ptrTime(time.Now().Add(-6 * time.Hour)),
-			CreatedAt:     time.Now().Add(-10 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-		{
-			Title:         "Milli Basketbolcu NBA'de Sözleşme İmzaladı",
-			Slug:          "milli-basketbolcu-nbade-sozlesme-imzaladi",
-			Content:       "Türk basketbolunun yükselen yıldızı, NBA takımlarından Los Angeles Lakers ile 3 yıllık sözleşme imzaladı. Yapılan açıklamaya göre, transferin değeri...",
-			Summary:       "Türk basketbolunun yükselen yıldızı, NBA takımlarından Los Angeles Lakers ile 3 yıllık sözleşme imzaladı.",
-			FeaturedImage: "https://images.unsplash.com/photo-1518407613690-d9fc990e795f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[1].ID,
-			CategoryID:    categories[2].ID,
-			Status:        "published",
-			ViewCount:     210,
-			IsFeatured:    false,
-			PublishedAt:   ptrTime(time.Now().Add(-28 * time.Hour)),
-			CreatedAt:     time.Now().Add(-36 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-		{
-			Title:         "Türkiye, Dünya Kupası Elemelerinde Zafer Kazandı",
-			Slug:          "turkiye-dunya-kupasi-elemelerinde-zafer-kazandi",
-			Content:       "A Milli Futbol Takımımız, 2026 Dünya Kupası Elemeleri kapsamında konuk ettiği takımı 3-1 mağlup etti. Milli takımımız, bu galibiyetle puanını 10'a yükseltti ve grup liderliğine yerleşti...",
-			Summary:       "A Milli Futbol Takımımız, 2026 Dünya Kupası Elemeleri kapsamında konuk ettiği takımı 3-1 mağlup etti.",
-			FeaturedImage: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-			AuthorID:      users[0].ID,
-			CategoryID:    categories[2].ID,
-			Status:        "published",
-			ViewCount:     185,
-			IsFeatured:    false,
-			PublishedAt:   ptrTime(time.Now().Add(-16 * time.Hour)),
-			CreatedAt:     time.Now().Add(-20 * time.Hour),
-			UpdatedAt:     time.Now(),
-		},
-	}
-
-	// Tüm makaleleri birleştir
-	articles := append(gundemArticles, ekonomiArticles...)
-	articles = append(articles, sporArticles...)
-
-	// Veritabanına ekle
+	// Makaleleri veritabanına ekle
 	if err := db.Create(&articles).Error; err != nil {
 		return nil, err
 	}
 
-	// Makalelere etiket ilişkisi ekle
-	for i, article := range articles {
-		var articleTags []models.Tag
-		// Her makaleye farklı etiketler ekle
-		tagIndices := []int{i % len(tags), (i + 3) % len(tags), (i + 5) % len(tags)}
-		for _, idx := range tagIndices {
-			articleTags = append(articleTags, tags[idx])
+	// Makalelere etiketleri bağla
+	for i := range articles {
+		// Her makaleye 3 etiket ekleyelim (makale indeksine göre farklı etiketler)
+		var articleTags []domain.Tag
+		for j := 0; j < 3; j++ {
+			tagIndex := (i + j) % len(tags)
+			articleTags = append(articleTags, tags[tagIndex])
 		}
 
-		// Many-to-many ilişkisini güncelle
-		if err := db.Model(&article).Association("Tags").Replace(articleTags); err != nil {
+		// Many-to-many ilişkiyi kur
+		if err := db.Model(&articles[i]).Association("Tags").Append(articleTags); err != nil {
 			return nil, err
 		}
 	}
@@ -436,25 +315,32 @@ func seedArticles(db *gorm.DB, users []models.User, categories []models.Category
 }
 
 // seedComments yorum örnek verilerini oluşturur
-func seedComments(db *gorm.DB, users []models.User, articles []models.Article) error {
-	var comments []models.Comment
-
-	for _, article := range articles {
-		// Her makale için 2-5 arası yorum ekle
-		commentCount := 2 + (int(article.ID) % 4) // 2 ile 5 arasında değişen sayıda yorum
-		for i := 0; i < commentCount; i++ {
-			// Farklı kullanıcılara yorum yaptır
-			userIndex := i % len(users)
-			comment := models.Comment{
-				ArticleID:  article.ID,
-				UserID:     users[userIndex].ID,
-				Content:    fmt.Sprintf("Bu haber hakkında düşüncelerim: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Yorum %d", i+1),
-				IsApproved: true,
-				CreatedAt:  time.Now().Add(-time.Duration(i+1) * 12 * time.Hour),
-				UpdatedAt:  time.Now(),
-			}
-			comments = append(comments, comment)
-		}
+func seedComments(db *gorm.DB, users []domain.User, articles []domain.Article) error {
+	comments := []domain.Comment{
+		{
+			ArticleID:  articles[0].ID,
+			UserID:     users[2].ID,
+			Content:    "Bu haberi okuyunca çok üzüldüm. Çocukların koşulları iyileştirilmeli.",
+			IsApproved: true,
+			CreatedAt:  time.Now().Add(-12 * time.Hour),
+			UpdatedAt:  time.Now().Add(-12 * time.Hour),
+		},
+		{
+			ArticleID:  articles[0].ID,
+			UserID:     users[1].ID,
+			Content:    "Konu hakkında daha detaylı bilgi verilmeli.",
+			IsApproved: true,
+			CreatedAt:  time.Now().Add(-8 * time.Hour),
+			UpdatedAt:  time.Now().Add(-8 * time.Hour),
+		},
+		{
+			ArticleID:  articles[1].ID,
+			UserID:     users[2].ID,
+			Content:    "Bu vergi düzenlemesi orta sınıfı nasıl etkileyecek?",
+			IsApproved: true,
+			CreatedAt:  time.Now().Add(-6 * time.Hour),
+			UpdatedAt:  time.Now().Add(-6 * time.Hour),
+		},
 	}
 
 	// Yorumları veritabanına ekle
@@ -468,35 +354,35 @@ func seedComments(db *gorm.DB, users []models.User, articles []models.Article) e
 
 // seedAdSpaces reklam alanı örnek verilerini oluşturur
 func seedAdSpaces(db *gorm.DB) error {
-	adSpaces := []models.AdSpace{
+	adSpaces := []domain.AdSpace{
 		{
-			Name:      "Header Reklam",
+			Name:      "Üst Banner",
 			Placement: "header",
-			Content:   "<div class='text-center'><img src='/uploads/ads/header-banner.jpg' alt='Header Reklam' class='img-fluid'></div>",
+			Content:   "<div class=\"ad-banner\">Banner Reklam Alanı</div>",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 		{
-			Name:      "Sidebar Üst",
-			Placement: "sidebar-top",
-			Content:   "<div class='text-center'><img src='/uploads/ads/sidebar-top.jpg' alt='Sidebar Üst Reklam' class='img-fluid'></div>",
+			Name:      "Yan Sidebar",
+			Placement: "sidebar",
+			Content:   "<div class=\"ad-sidebar\">Sidebar Reklam Alanı</div>",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 		{
-			Name:      "Sidebar Alt",
-			Placement: "sidebar-bottom",
-			Content:   "<div class='text-center'><img src='/uploads/ads/sidebar-bottom.jpg' alt='Sidebar Alt Reklam' class='img-fluid'></div>",
+			Name:      "Makale İçi",
+			Placement: "article-content",
+			Content:   "<div class=\"ad-content\">İçerik Reklam Alanı</div>",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		},
 		{
-			Name:      "İçerik Arası",
-			Placement: "content",
-			Content:   "<div class='text-center my-4'><img src='/uploads/ads/content.jpg' alt='İçerik Reklam' class='img-fluid'></div>",
+			Name:      "Alt Alan",
+			Placement: "footer",
+			Content:   "<div class=\"ad-footer\">Alt Reklam Alanı</div>",
 			IsActive:  true,
 			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
@@ -510,9 +396,4 @@ func seedAdSpaces(db *gorm.DB) error {
 
 	log.Println("Reklam alanı seed verileri oluşturuldu")
 	return nil
-}
-
-// ptrTime time.Time tipindeki değerin pointerını döndürür
-func ptrTime(t time.Time) *time.Time {
-	return &t
 }
